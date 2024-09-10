@@ -3,7 +3,7 @@ use std::{collections::HashMap, io::Error, path::PathBuf};
 use crate::db::meta::EntryMeta;
 
 pub struct TrieCache {
-    root: TrieNode,
+    pub root: TrieNode,
 }
 
 impl TrieCache {
@@ -13,12 +13,12 @@ impl TrieCache {
         }
     }
 
-    pub fn search_full_path(&self, path: &PathBuf) -> Option<PathBuf> {
+    pub fn search_full_path(&mut self, path: &PathBuf, update_count: bool) -> Option<EntryMeta> {
         let paths = path
             .components()
             .map(|elem| elem.as_os_str().to_str().unwrap())
             .collect();
-        self.root.search_full_path(paths)
+        self.root.search_full_path(paths, update_count)
     }
 
     pub fn search_entry(&self, entry: &str) -> Vec<PathBuf> {
@@ -30,7 +30,7 @@ impl TrieCache {
         path: &PathBuf,
         meta: Option<EntryMeta>,
         update_count: bool,
-    ) -> Result<(), Error> {
+    ) -> Result<Option<EntryMeta>, Error> {
         let paths = path
             .components()
             .map(|elem| elem.as_os_str().to_str().unwrap())
@@ -38,12 +38,12 @@ impl TrieCache {
         self.root.insert(paths, meta, update_count)
     }
 
-    pub fn contains_full_path(&self, path: &PathBuf) -> bool {
+    pub fn contains_full_path(&mut self, path: &PathBuf, update_count: bool) -> bool {
         let paths = path
             .components()
             .map(|elem| elem.as_os_str().to_str().unwrap())
             .collect();
-        self.root.search_full_path(paths).is_some()
+        self.root.search_full_path(paths, update_count).is_some()
     }
 
     pub fn delete(&mut self, path: &PathBuf) -> Result<(), String> {
@@ -92,12 +92,12 @@ impl TrieNode {
         })
     }
 
-    pub fn contains_full_path(&self, path: &PathBuf) -> bool {
+    pub fn contains_full_path(&mut self, path: &PathBuf, update_count: bool) -> bool {
         let paths = path
             .components()
             .map(|elem| elem.as_os_str().to_str().unwrap())
             .collect();
-        self.search_full_path(paths).is_some()
+        self.search_full_path(paths, update_count).is_some()
     }
 
     /// 根据文件名或文件夹名查找所有匹配的路径
@@ -117,17 +117,20 @@ impl TrieNode {
         results
     }
 
-    fn search_full_path(&self, path: Vec<&str>) -> Option<PathBuf> {
+    fn search_full_path(&mut self, path: Vec<&str>, update_count: bool) -> Option<EntryMeta> {
         let mut cur_node = self;
 
         for p in path {
-            if let Some(node) = cur_node.children.get(p) {
-                cur_node = &**node;
+            if let Some(node) = cur_node.children.get_mut(p) {
+                cur_node = &mut **node;
             } else {
                 return None;
             }
         }
-        Some(cur_node.full_path.clone())
+        if update_count {
+            cur_node.meta.access_count += 1; // 访问计数加1
+        }
+        Some(cur_node.meta.clone())
     }
 
     // 更新 insert 方法，以便在插入时构建完整路径
@@ -136,7 +139,7 @@ impl TrieNode {
         path: Vec<&str>,
         meta: Option<EntryMeta>,
         update_count: bool,
-    ) -> Result<(), Error> {
+    ) -> Result<Option<EntryMeta>, Error> {
         let mut full_path = self.full_path.clone(); // 初始化完整路径
         let mut cur_node = self;
 
@@ -171,7 +174,7 @@ impl TrieNode {
             println!("{:?}", &cur_node.meta);
         }
 
-        Ok(())
+        Ok(Some(cur_node.meta.clone()))
     }
 
     pub fn delete(&mut self, path: Vec<&str>) -> Result<(), String> {
@@ -208,16 +211,20 @@ mod test {
 
         assert!(res.is_ok());
 
-        let found_path = cache.search_full_path(&PathBuf::from("/tmp"));
-        assert_eq!(found_path, Some(PathBuf::from("/tmp")));
+        let found_path = cache.search_full_path(&PathBuf::from("/tmp"), false);
+        assert_eq!(found_path.unwrap().path, PathBuf::from("/tmp"));
 
-        let found_path = cache.search_full_path(&PathBuf::from("/tmp/tmp/documents"));
-        assert_eq!(found_path, Some(PathBuf::from("/tmp/tmp/documents")));
-
-        let found_path = cache.search_full_path(&PathBuf::from("/tmp/tmp/documents/file.txt"));
+        let found_path = cache.search_full_path(&PathBuf::from("/tmp/tmp/documents"), false);
         assert_eq!(
-            found_path,
-            Some(PathBuf::from("/tmp/tmp/documents/file.txt"))
+            found_path.unwrap().path,
+            PathBuf::from("/tmp/tmp/documents")
+        );
+
+        let found_path =
+            cache.search_full_path(&PathBuf::from("/tmp/tmp/documents/file.txt"), false);
+        assert_eq!(
+            found_path.unwrap().path,
+            PathBuf::from("/tmp/tmp/documents/file.txt")
         );
 
         let path = PathBuf::from("/tmp/tmp2/documents/file.txt");
@@ -225,16 +232,20 @@ mod test {
 
         assert!(res.is_ok());
 
-        let found_path = cache.search_full_path(&PathBuf::from("/tmp"));
-        assert_eq!(found_path, Some(PathBuf::from("/tmp")));
+        let found_path = cache.search_full_path(&PathBuf::from("/tmp"), false);
+        assert_eq!(found_path.unwrap().path, PathBuf::from("/tmp"));
 
-        let found_path = cache.search_full_path(&PathBuf::from("/tmp/tmp2/documents"));
-        assert_eq!(found_path, Some(PathBuf::from("/tmp/tmp2/documents")));
-
-        let found_path = cache.search_full_path(&PathBuf::from("/tmp/tmp2/documents/file.txt"));
+        let found_path = cache.search_full_path(&PathBuf::from("/tmp/tmp2/documents"), false);
         assert_eq!(
-            found_path,
-            Some(PathBuf::from("/tmp/tmp2/documents/file.txt"))
+            found_path.unwrap().path,
+            PathBuf::from("/tmp/tmp2/documents")
+        );
+
+        let found_path =
+            cache.search_full_path(&PathBuf::from("/tmp/tmp2/documents/file.txt"), false);
+        assert_eq!(
+            found_path.unwrap().path,
+            PathBuf::from("/tmp/tmp2/documents/file.txt")
         );
     }
 

@@ -1,3 +1,4 @@
 [database]
 dbtype = "sqlite"
-path = ["/home/toni/proj/file_elf/sqlite3.db", ]
+path = "/home/toni/proj/file_elf/sqlite3.db"
+targets = ["/home/toni/Course", "/home/toni/proj"]

@@ -12,6 +12,7 @@ pub struct Config {
 pub struct DatabaseConfig {
     pub dbtype: String,
     pub path: String,
+    pub targets: Vec<String>,
 }
 
 pub fn load_config(path: &str) -> Result<Config, Box<dyn std::error::Error>> {
