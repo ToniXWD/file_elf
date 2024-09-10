@@ -1,0 +1,3 @@
+[database]
+dbtype = "sqlite"
+path = ["/home/toni/proj/file_elf/sqlite3.db", ]

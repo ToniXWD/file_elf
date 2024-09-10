@@ -1,10 +1,15 @@
-mod db;
-mod server;
+use std::thread;
 
-use db::SqliteDatabase;
-use server::file_checker;
+use file_elf::{config, db::SqliteDatabase, server::file_checker};
+
 fn main() {
-    let db: SqliteDatabase = SqliteDatabase::new().unwrap();
+    let conf = config::load_config("/home/toni/proj/file_elf/base.toml").unwrap();
+    let db: SqliteDatabase = SqliteDatabase::new(&conf.database.path).unwrap();
 
-    file_checker(&db);
+    // 在单独的线程中运行 file_checker
+    _ = thread::spawn(move || {
+        file_checker(&db);
+    })
+    .join()
+    .unwrap();
 }

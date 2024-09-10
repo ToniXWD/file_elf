@@ -8,6 +8,10 @@ edition = "2021"
 [dependencies]
 notify = "*"
 rusqlite = "*"
+toml = "*"
+serde = { version = "*", features = ["derive"] }
+lazy_static ="*"
+bincode="*"
 
 # [build-dependencies]
 
