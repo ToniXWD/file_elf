@@ -4,13 +4,15 @@ use std::{
 };
 
 use file_elf::{
+    backend::file_checker,
     cache::cache::init_trie,
     config,
     db::{Database, SqliteDatabase},
-    server::file_checker,
+    server::init_route,
 };
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let conf = config::load_config("base.toml").unwrap();
     let db: Arc<Mutex<dyn Database>> = Arc::new(Mutex::new(
         SqliteDatabase::new(&conf.database.path).unwrap(),
@@ -26,6 +28,9 @@ fn main() {
         });
         handlers.push(handle);
     }
+
+    // 启动 Rocket 服务器
+    init_route().await;
 
     for hanlder in handlers {
         hanlder.join().unwrap();

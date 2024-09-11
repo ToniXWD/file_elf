@@ -1,6 +1,6 @@
 use super::*;
 use meta::EntryMeta;
-use rusqlite::{params, Connection, NO_PARAMS};
+use rusqlite::{params, Connection};
 
 /// 定义一个具体的 SQLite 数据库实现
 pub struct SqliteDatabase {
@@ -37,7 +37,7 @@ impl Database for SqliteDatabase {
                 entry TEXT PRIMARY KEY NOT NULL,
                 meta BLOB
             )",
-            NO_PARAMS,
+            params![],
         )?;
         Ok(())
     }
@@ -48,7 +48,7 @@ impl Database for SqliteDatabase {
             .conn
             .prepare("SELECT entry,meta FROM access_records")
             .unwrap();
-        let mut rows = stmt.query(NO_PARAMS).unwrap();
+        let mut rows = stmt.query(params![]).unwrap();
         let mut recs: Vec<(String, EntryMeta)> = vec![];
         // TODO: 目前返回全量数据, 应该优化成迭代器
         while let Some(row) = rows.next().unwrap() {

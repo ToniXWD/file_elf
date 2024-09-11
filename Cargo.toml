@@ -6,12 +6,14 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-notify = "*"
+notify = "4.0.0"
 rusqlite = "*"
 toml = "*"
 serde = { version = "*", features = ["derive"] }
-lazy_static ="*"
-bincode="*"
+lazy_static = "*"
+bincode = "*"
+rocket = { version = "0.5.1", features = ["json"] }
+tokio = { version = "1", features = ["full"] }
 
 # [build-dependencies]
 

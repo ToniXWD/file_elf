@@ -145,21 +145,26 @@ impl TrieNode {
 
         for (idx, component) in path.iter().enumerate() {
             let component_str = component.to_string();
+            let new_path = full_path.join(component_str.clone());
+            let new_node_res = TrieNode::new_with_path(&new_path);
 
-            // 检查子节点是否存在，如果不存在则创建新的节点
-            cur_node
-                .children
-                .entry(component_str.clone())
-                .or_insert_with(|| {
-                    let new_path = full_path.join(component_str.clone());
-                    let mut new_node = TrieNode::new_with_path(&new_path).unwrap();
-
-                    if idx == path.len() - 1 && meta.is_some() {
-                        new_node.meta = meta.clone().unwrap();
-                    }
-
-                    Box::new(new_node)
-                });
+            match new_node_res {
+                Ok(mut new_node) => {
+                    // 检查子节点是否存在，如果不存在则创建新的节点
+                    cur_node
+                        .children
+                        .entry(component_str.clone())
+                        .or_insert_with(|| {
+                            if idx == path.len() - 1 && meta.is_some() {
+                                new_node.meta = meta.clone().unwrap();
+                            }
+                            Box::new(new_node)
+                        });
+                }
+                Err(e) => {
+                    return Err(e);
+                },
+            }
 
             // 移动到子节点并更新完整路径
             cur_node = &mut **cur_node.children.get_mut(&component_str).unwrap();
