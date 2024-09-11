@@ -15,7 +15,7 @@ bincode = "*"
 rocket = { version = "0.5.1", features = ["json"] }
 tokio = { version = "1", features = ["full"] }
 
-# [build-dependencies]
+[build-dependencies]
 
-# [build]
-# script = "build.rs"
+[build]
+script = "build.rs"
