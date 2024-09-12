@@ -1,3 +1,10 @@
+# Parameters for the script
+param (
+    [switch]$Clean,
+    [switch]$Build,
+    [switch]$Publish
+)
+
 # Variables
 $PUBLISH_DIR = "./publish"
 $CARGO_TARGET_DIR = "./target/release"
@@ -72,13 +79,7 @@ function Clean-Elf {
     cargo clean
 }
 
-# Main logic for build script
-param (
-    [switch]$Clean,
-    [switch]$Build,
-    [switch]$Publish
-)
-
+# Main logic for the build script
 if ($Clean) {
     Clean-Build
 } elseif ($Build) {
