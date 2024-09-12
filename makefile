@@ -5,7 +5,7 @@ TAURI_APP_DIR := ./app/search-files-app
 TAURI_TARGET_DIR := $(TAURI_APP_DIR)/src-tauri/target/release
 RUST_BINARY := file_elf
 TAURI_BINARY := search-files-app
-ZIP_FILE := release_package.zip
+ZIP_FILE := release_package_linux.zip
 
 # Default target: build everything
 .PHONY: all
@@ -33,7 +33,7 @@ publish-dir:
 publish: publish-dir
 	@echo "Copying files to the publish directory..."
 	cp $(CARGO_TARGET_DIR)/$(RUST_BINARY) $(PUBLISH_DIR)/
-	cp ./base.toml $(PUBLISH_DIR)/
+# cp ./base.toml $(PUBLISH_DIR)/
 	cp $(TAURI_TARGET_DIR)/$(TAURI_BINARY) $(PUBLISH_DIR)/
 	@echo "Packaging files into $(ZIP_FILE)..."
 	cd $(PUBLISH_DIR) && zip -r ../$(ZIP_FILE) .

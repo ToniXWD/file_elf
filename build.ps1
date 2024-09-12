@@ -12,7 +12,7 @@ $TAURI_APP_DIR = "./app/search-files-app"
 $TAURI_TARGET_DIR = "$TAURI_APP_DIR/src-tauri/target/release"
 $RUST_BINARY = "file_elf.exe"
 $TAURI_BINARY = "search-files-app.exe"
-$ZIP_FILE = "release_package.zip"
+$ZIP_FILE = "release_package_windows.zip"
 
 # Ensure the publish directory exists
 function Ensure-PublishDir {
@@ -41,7 +41,6 @@ function Publish-Files {
     Ensure-PublishDir
     Write-Host "Copying files to the publish directory..."
     Copy-Item "$CARGO_TARGET_DIR/$RUST_BINARY" "$PUBLISH_DIR/"
-    Copy-Item "./base.toml" "$PUBLISH_DIR/"
     Copy-Item "$TAURI_TARGET_DIR/$TAURI_BINARY" "$PUBLISH_DIR/"
 }
 

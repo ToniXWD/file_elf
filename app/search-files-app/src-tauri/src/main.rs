@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::env;
+use std::os::windows::process::CommandExt;
 use std::path::PathBuf;
 use std::process::Command;
 use std::sync::Arc;
@@ -73,7 +74,14 @@ fn launch_file_elf() {
     // 如果文件存在，则启动子进程
     if elf_path.exists() {
         println!("Found backend executable: {}", elf_file);
-        let result = Command::new(elf_path).spawn(); // 启动子进程
+
+        #[cfg(target_os = "windows")]
+        let result = Command::new(elf_path)
+            .creation_flags(0x08000000) // CREATE_NO_WINDOW flag for Windows
+            .spawn(); // 启动子进程
+
+        #[cfg(not(target_os = "windows"))]
+        let result = Command::new(elf_path).spawn(); // 启动子进程 (非Windows平台)
 
         match result {
             Ok(_) => println!("Backend process started successfully."),
