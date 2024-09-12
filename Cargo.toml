@@ -13,7 +13,6 @@ serde = { version = "*", features = ["derive"] }
 lazy_static = "*"
 bincode = "*"
 rocket = { version = "0.5.1", features = ["json"] }
-tokio = { version = "1", features = ["full"] }
 
 [build-dependencies]
 

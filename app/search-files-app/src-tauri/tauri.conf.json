@@ -3,13 +3,18 @@
     "beforeBuildCommand": "npm run build",
     "beforeDevCommand": "npm run start",
     "devPath": "http://localhost:3000",
-    "distDir": "../build"
+    "distDir": "../build",
+    "withGlobalTauri": true
   },
   "package": {
     "productName": "search-files-app",
     "version": "0.1.0"
   },
   "tauri": {
+    "systemTray": {
+      "iconPath": "icons/32x32.png"
+    },
+
     "allowlist": {
       "all": false
     },
@@ -58,7 +63,7 @@
         "height": 600,
         "resizable": true,
         "title": "search-files-app",
-        "width": 800
+        "width": 600
       }
     ]
   }

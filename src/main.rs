@@ -11,7 +11,7 @@ use file_elf::{
     server::init_route,
 };
 
-#[tokio::main]
+#[rocket::main]
 async fn main() {
     let conf = config::load_config("base.toml").unwrap();
     let db: Arc<Mutex<dyn Database>> = Arc::new(Mutex::new(
