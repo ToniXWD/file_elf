@@ -2,7 +2,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::env;
-use std::os::windows::process::CommandExt;
 use std::path::PathBuf;
 use std::process::Command;
 use std::sync::Arc;
@@ -11,6 +10,9 @@ use std::time::Duration;
 use std::time::Instant;
 use tauri::GlobalShortcutManager;
 use tauri::{CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu};
+
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
 
 /// 打开文件
 #[tauri::command]
