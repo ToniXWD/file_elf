@@ -1,28 +1,16 @@
-use std::{
-    sync::{Arc, Mutex},
-    thread,
-};
+use std::thread;
 
 use file_elf::{
-    backend::file_checker,
-    cache::cache::init_trie,
-    config,
-    db::{Database, SqliteDatabase},
-    server::init_route,
+    backend::file_checker, cache::cache::init_trie, config::CONF, db::DB, server::init_route,
 };
 
 #[rocket::main]
 async fn main() {
-    let conf = config::load_config("base.toml").unwrap();
-    let db: Arc<Mutex<dyn Database>> = Arc::new(Mutex::new(
-        SqliteDatabase::new(&conf.database.path).unwrap(),
-    ));
-
-    init_trie(db.clone());
+    init_trie(DB.clone());
 
     let mut handlers = Vec::new();
-    for target in conf.database.targets {
-        let new_db = db.clone();
+    for target in &CONF.database.targets {
+        let new_db = DB.clone();
         let handle = thread::spawn(move || {
             file_checker(new_db, target);
         });

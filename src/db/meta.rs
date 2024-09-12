@@ -1,5 +1,5 @@
-use std::path::PathBuf;
 use std::time::SystemTime;
+use std::{path::PathBuf, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 
@@ -8,6 +8,30 @@ pub enum EntryType {
     Dir,
     File,
     Unknown,
+}
+
+impl ToString for EntryType {
+    fn to_string(&self) -> String {
+        match self {
+            EntryType::Dir => "Dir".to_string(),
+            EntryType::File => "File".to_string(),
+            EntryType::Unknown => "Unknown".to_string(),
+        }
+    }
+}
+
+impl FromStr for EntryType {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s == "Dir" {
+            Ok(EntryType::Dir)
+        } else if s == "File" {
+            Ok(EntryType::File)
+        } else {
+            Ok(EntryType::Unknown)
+        }
+    }
 }
 
 /// 文件项的元数据，包括从 PathBuf 中获取的基础属性，以及本项目维持的一个访问计数

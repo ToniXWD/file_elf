@@ -1,7 +1,12 @@
+use lazy_static::lazy_static;
 use serde::Deserialize;
 use std::fs::File;
 use std::io::Read;
 use toml;
+
+lazy_static! {
+    pub static ref CONF: Config = load_config("base.toml").unwrap();
+}
 
 #[derive(Debug, Deserialize)]
 pub struct Config {

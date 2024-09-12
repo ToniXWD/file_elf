@@ -2,6 +2,8 @@ use std::{collections::HashMap, io::Error, path::PathBuf};
 
 use crate::db::meta::EntryMeta;
 
+use crate::util::{pattern_match, regex_match};
+
 pub struct TrieCache {
     pub root: TrieNode,
 }
@@ -21,8 +23,12 @@ impl TrieCache {
         self.root.search_full_path(paths, update_count)
     }
 
-    pub fn search_entry(&self, entry: &str) -> Vec<PathBuf> {
-        self.root.search_entry(entry)
+    pub fn search_entry(&self, entry: &str, is_fuzzy: bool) -> Vec<PathBuf> {
+        self.root.search_entry(entry, is_fuzzy)
+    }
+
+    pub fn search_path_regex(&self, pattern_path: &str) -> Vec<PathBuf> {
+        self.root.search_path_regex(pattern_path)
     }
 
     pub fn insert_path(
@@ -101,19 +107,34 @@ impl TrieNode {
     }
 
     /// 根据文件名或文件夹名查找所有匹配的路径
-    pub fn search_entry(&self, entry_name: &str) -> Vec<PathBuf> {
+    pub fn search_entry(&self, entry_name: &str, is_fuzzy: bool) -> Vec<PathBuf> {
         let mut results = Vec::new();
 
         // 如果当前节点的名称与目标名称相匹配，将当前节点的路径加入结果
-        if self.entry_name == entry_name {
+        if pattern_match(entry_name, &self.entry_name, is_fuzzy) {
             results.push(self.full_path.clone());
         }
 
         // 对于每个子节点，递归搜索并合并结果
         for (_, child) in &self.children {
-            results.extend(child.search_entry(entry_name));
+            results.extend(child.search_entry(entry_name, is_fuzzy));
         }
 
+        results
+    }
+
+    pub fn search_path_regex(&self, pattern_path: &str) -> Vec<PathBuf> {
+        let mut results = Vec::new();
+
+        // 如果当前节点的路径与目标路径匹配，将当前节点的路径加入结果
+        if regex_match(&self.full_path, pattern_path) {
+            results.push(self.full_path.clone());
+        }
+
+        // TODO: 目前确实对正则表达式提前终止查询的优化
+        for (_, child) in &self.children {
+            results.extend(child.search_path_regex(pattern_path));
+        }
         results
     }
 
@@ -163,7 +184,7 @@ impl TrieNode {
                 }
                 Err(e) => {
                     return Err(e);
-                },
+                }
             }
 
             // 移动到子节点并更新完整路径
@@ -271,17 +292,17 @@ mod test {
         _ = cache.insert_path(&path4, None, false);
 
         // 检查根据文件名搜索
-        let mut results = cache.search_entry("file1.txt");
+        let mut results = cache.search_entry("file1.txt", false);
         results.sort();
         assert_eq!(results, vec![path1, path3]);
 
         // 检查根据目录名搜索
-        let mut results = cache.search_entry("documents");
+        let mut results = cache.search_entry("documents", false);
         results.sort();
         assert_eq!(results, vec![PathBuf::from("/tmp/tmp/documents")]);
 
         // 检查不存在的条目
-        let mut results = cache.search_entry("nonexistent");
+        let mut results = cache.search_entry("nonexistent", false);
         results.sort();
         assert_eq!(results, Vec::<PathBuf>::new());
     }

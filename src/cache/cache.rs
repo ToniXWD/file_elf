@@ -62,12 +62,20 @@ impl Cacher {
         self.tree.contains_full_path(path, update_count)
     }
 
-    pub fn search_path(&mut self, path: &PathBuf, update_count: bool) -> Option<EntryMeta> {
+    pub fn search_path(
+        &mut self,
+        path: &PathBuf,
+        update_count: bool,
+    ) -> Option<EntryMeta> {
         self.tree.search_full_path(path, update_count)
     }
 
-    pub fn search_entry(&self, entry: &str) -> Vec<PathBuf> {
-        self.tree.search_entry(entry)
+    pub fn search_path_regex(&self, pattern_path: &str) -> Vec<PathBuf> {
+        self.tree.search_path_regex(pattern_path)
+    }
+
+    pub fn search_entry(&self, entry: &str, is_fuzzy: bool) -> Vec<PathBuf> {
+        self.tree.search_entry(entry, is_fuzzy)
     }
 }
 

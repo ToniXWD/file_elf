@@ -4,7 +4,8 @@ import { Form, Button, ListGroup, Container, Row, Col, Toast } from 'react-boots
 
 const SearchForm = () => {
     const [entry, setEntry] = useState('');
-    const [isPrefix, setIsPrefix] = useState(false);
+    const [isFuzzy, setIsFuzzy] = useState(false);
+    const [isRegex, setIsRegex] = useState(false);
     const [results, setResults] = useState([]);
     const [favorites, setFavorites] = useState([]); // 新增状态用于收藏路径
     const [message, setMessages] = useState([]); // 新增状态用于记录操作
@@ -17,12 +18,22 @@ const SearchForm = () => {
 
     const handleSearch = async () => {
         try {
-            const response = await axios.get('http://127.0.0.1:8000/file_elf/search', {
-                params: {
-                    entry,
-                    is_prefix: isPrefix
-                }
-            });
+            let response;
+            if (isRegex) {
+                response = await axios.get('http://127.0.0.1:8000/file_elf/regex_search', {
+                    params: {
+                        path: entry,
+                    }
+                });
+            } else {
+                response = await axios.get('http://127.0.0.1:8000/file_elf/search', {
+                    params: {
+                        entry,
+                        is_fuzzy: isFuzzy
+                    }
+                });
+            }
+
 
             if (response.data && Array.isArray(response.data)) {
                 setResults(response.data);
@@ -95,9 +106,18 @@ const SearchForm = () => {
                         <Form.Group controlId="prefix">
                             <Form.Check
                                 type="checkbox"
-                                label="Is Prefix?"
-                                checked={isPrefix}
-                                onChange={(e) => setIsPrefix(e.target.checked)}
+                                label="Is Fuzzy?"
+                                checked={isFuzzy}
+                                onChange={(e) => setIsFuzzy(e.target.checked)}
+                            />
+                        </Form.Group>
+                        <br></br>
+                        <Form.Group controlId="prefix">
+                            <Form.Check
+                                type="checkbox"
+                                label="Is Regex?"
+                                checked={isRegex}
+                                onChange={(e) => setIsRegex(e.target.checked)}
                             />
                         </Form.Group>
                         <br></br>

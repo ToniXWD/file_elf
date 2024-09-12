@@ -1,6 +1,6 @@
 use rocket::{get, routes, serde::json::Json};
 
-use crate::cache::CACHER;
+use crate::{cache::CACHER, db::DB};
 
 use rocket::{
     fairing::{Fairing, Info, Kind},
@@ -32,17 +32,45 @@ impl Fairing for CORS {
     }
 }
 
-#[get("/search?<entry>&<is_prefix>")]
-fn search(entry: String, is_prefix: bool) -> Json<Vec<String>> {
-    println!("search: entry({}), is_prefix({})", entry, is_prefix);
+#[get("/search?<entry>&<is_fuzzy>")]
+fn search(entry: String, is_fuzzy: bool) -> Json<Vec<String>> {
+    println!("search: entry({}), is_fuzzy({})", entry, is_fuzzy);
     let guard = CACHER.lock().unwrap(); // 使用 mut 解锁后可以释放锁
-    let res = if is_prefix {
-        guard.search_entry(&entry)
-        // 暂时采用统一接口，后续再进行优化
-    } else {
-        guard.search_entry(&entry)
-    };
+    let res = guard.search_entry(&entry, is_fuzzy);
+
     drop(guard); // 显式释放锁
+
+    if res.is_empty() {
+        // 缓存没有查到, 从数据库中尽显查询(数据库查询暂不支持模糊查询)
+        println!("cache not found, DB search: entry({})", entry);
+        match DB.lock().unwrap().find_by_entry(&entry) {
+            Ok(recs) => {
+                let res2 = recs
+                    .into_iter()
+                    .map(|elem| elem.path.to_string_lossy().to_string())
+                    .collect();
+                Json(res2)
+            }
+            Err(e) => {
+                println!("DB error: {:?}", e);
+                Json(Vec::new())
+            }
+        }
+    } else {
+        let res2 = res
+            .into_iter()
+            .map(|elem| elem.into_os_string().into_string().unwrap())
+            .collect();
+        Json(res2)
+    }
+}
+
+#[get("/regex_search?<path>")]
+fn regex_search(path: String) -> Json<Vec<String>> {
+    println!("regex_search: entry({})", path);
+
+    let guard = CACHER.lock().unwrap(); // 使用 mut 解锁后可以释放锁
+    let res = guard.search_path_regex(&path);
 
     let res2 = res
         .into_iter()
@@ -52,7 +80,9 @@ fn search(entry: String, is_prefix: bool) -> Json<Vec<String>> {
 }
 
 pub async fn init_route() {
-    let rocket_instance = rocket::build().mount("/file_elf", routes![search]).attach(CORS);
+    let rocket_instance = rocket::build()
+        .mount("/file_elf", routes![search, regex_search])
+        .attach(CORS);
 
     // 启动 Rocket 服务器并处理错误
     if let Err(e) = rocket_instance.launch().await {

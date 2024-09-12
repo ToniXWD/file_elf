@@ -2,12 +2,12 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::path::PathBuf;
+use std::sync::Arc;
+use std::sync::Mutex;
 use std::time::Duration;
 use std::time::Instant;
 use tauri::GlobalShortcutManager;
 use tauri::{CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu};
-use std::sync::Mutex;
-use std::sync::Arc;
 
 /// 打开文件
 #[tauri::command]
@@ -104,23 +104,24 @@ fn main() {
             let mut shortcut_manager = app.global_shortcut_manager();
             let last_press_time_clone = Arc::clone(&last_press_time);
 
-            shortcut_manager
-                .register("Esc", move || {
-                    let now = Instant::now();
-                    let mut last_time = last_press_time_clone.lock().unwrap();
+            match shortcut_manager.register("Esc", move || {
+                let now = Instant::now();
+                let mut last_time = last_press_time_clone.lock().unwrap();
 
-                    if now.duration_since(*last_time) < double_click_threshold {
-                        // 如果两次 Alt 键按下的时间间隔小于阈值，显示或隐藏窗口
-                        if window.is_visible().unwrap() {
-                            window.hide().unwrap();
-                        } else {
-                            window.show().unwrap();
-                            window.set_focus().unwrap(); // 让窗口获得焦点
-                        }
+                if now.duration_since(*last_time) < double_click_threshold {
+                    // 如果两次 Alt 键按下的时间间隔小于阈值，显示或隐藏窗口
+                    if window.is_visible().unwrap() {
+                        window.hide().unwrap();
+                    } else {
+                        window.show().unwrap();
+                        window.set_focus().unwrap(); // 让窗口获得焦点
                     }
-                    *last_time = now; // 更新 last_press_time
-                })
-                .expect("Failed to register global shortcut");
+                }
+                *last_time = now; // 更新 last_press_time
+            }) {
+                Ok(_) => println!("Shortcut registered successfully."),
+                Err(e) => println!("Failed to register shortcut: {}", e),
+            }
 
             Ok(())
         })

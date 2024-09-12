@@ -13,6 +13,8 @@ serde = { version = "*", features = ["derive"] }
 lazy_static = "*"
 bincode = "*"
 rocket = { version = "0.5.1", features = ["json"] }
+strsim = "0.11.1"
+regex = "1"
 
 [build-dependencies]
 

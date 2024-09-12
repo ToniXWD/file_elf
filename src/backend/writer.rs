@@ -27,19 +27,19 @@ pub fn db_writer(db: Arc<Mutex<dyn Database>>, db_receiver: Receiver<DbMsg>) {
                 DbAction::CREATE => {
                     println!("create: {:?}", msg.path);
                     let db_guard = db.lock().unwrap();
-                    _ = db_guard.create_event(msg.path.unwrap(), msg.meta.unwrap());
+                    _ = db_guard.insert_rec(&msg.path.unwrap(), &msg.meta.unwrap());
                 }
                 DbAction::FIND => {
                     println!("find: nothing to do")
                 }
                 DbAction::DELETE => {
                     let db_guard = db.lock().unwrap();
-                    _ = db_guard.delete_by_entry(msg.entry.unwrap());
+                    _ = db_guard.delete_by_entry(&msg.entry.unwrap());
                 }
                 DbAction::UPDATE => {
                     println!("update: {:?}", msg.entry);
                     let db_guard = db.lock().unwrap();
-                    _ = db_guard.update_meta(msg.entry.unwrap(), msg.meta.unwrap());
+                    _ = db_guard.update_meta(&msg.path.unwrap(), &msg.meta.unwrap());
                 }
             },
             Err(e) => {

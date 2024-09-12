@@ -1,11 +1,35 @@
+use std::time::{SystemTime, UNIX_EPOCH};
+
 use super::*;
 use meta::EntryMeta;
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, Row};
 
 /// 定义一个具体的 SQLite 数据库实现
 pub struct SqliteDatabase {
     conn: Connection,
     db_path: PathBuf,
+}
+
+fn system_to_unix_ts(time: &SystemTime) -> u64 {
+    time.duration_since(UNIX_EPOCH)
+        .expect("Time went backwards")
+        .as_secs()
+}
+
+fn row_to_meta(row: &Row<'_>) -> EntryMeta {
+    let path: String = row.get(1).unwrap();
+    let size: u64 = row.get(2).unwrap();
+    let modified: i64 = row.get(3).unwrap();
+    let access_count: u32 = row.get(4).unwrap();
+    let entry_type: String = row.get(5).unwrap();
+
+    EntryMeta {
+        path: PathBuf::from(path),
+        size: size as u64,
+        modified: SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(modified as u64),
+        access_count: access_count as u32,
+        entry_type: entry_type.parse().unwrap(),
+    }
 }
 
 impl SqliteDatabase {
@@ -34,8 +58,12 @@ impl Database for SqliteDatabase {
     fn create_table(&self) -> Result<(), CustomError> {
         self.conn.execute(
             "CREATE TABLE IF NOT EXISTS access_records (
-                entry TEXT PRIMARY KEY NOT NULL,
-                meta BLOB
+                entry TEXT NOT NULL,
+                path TEXT NOT NULL UNIQUE,
+                size INTEGER NOT NULL,
+                modified INTEGER NOT NULL,
+                access_count INTEGER NOT NULL,
+                entry_type TEXT NOT NULL
             )",
             params![],
         )?;
@@ -44,53 +72,62 @@ impl Database for SqliteDatabase {
 
     /// 查询所有记录的迭代器
     fn find_all(&self) -> Vec<(String, EntryMeta)> {
-        let mut stmt = self
-            .conn
-            .prepare("SELECT entry,meta FROM access_records")
-            .unwrap();
+        let mut stmt = self.conn.prepare("SELECT * FROM access_records").unwrap();
         let mut rows = stmt.query(params![]).unwrap();
         let mut recs: Vec<(String, EntryMeta)> = vec![];
         // TODO: 目前返回全量数据, 应该优化成迭代器
         while let Some(row) = rows.next().unwrap() {
             let entry: String = row.get(0).unwrap();
-            let meta: Vec<u8> = row.get(1).unwrap();
-            let entry_meta: EntryMeta = bincode::deserialize(&meta)
-                .map_err(|e| CustomError::Bincode(*e))
-                .unwrap();
+
+            let entry_meta = row_to_meta(row);
+
             recs.push((entry, entry_meta));
         }
         recs
     }
 
-    fn create_event(&self, path: PathBuf, meta: EntryMeta) -> Result<(), CustomError> {
+    fn insert_rec(&self, path: &PathBuf, meta: &EntryMeta) -> Result<(), CustomError> {
         let entry_name = path.file_name().unwrap().to_str().unwrap();
-        let entry_s = bincode::serialize(&meta).unwrap();
+        let e_path = path.to_string_lossy();
         self.conn.execute(
-            "INSERT INTO access_records (entry, meta) VALUES (?1, ?2)",
-            params![entry_name, entry_s],
+            "INSERT INTO access_records (entry, path, size, modified, access_count, entry_type) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            params![entry_name, &e_path, &meta.size, system_to_unix_ts(&meta.modified), &meta.access_count, &meta.entry_type.to_string()],
         )?;
         Ok(())
     }
 
-    /// 按主键查找元数据
-    fn find_by_entry(&self, entry: String) -> Result<Option<EntryMeta>, CustomError> {
+    /// 按entry查找元数据
+    fn find_by_entry(&self, entry: &str) -> Result<Vec<EntryMeta>, CustomError> {
         let mut stmt = self
             .conn
-            .prepare("SELECT meta FROM access_records WHERE entry = ?1")?;
+            .prepare("SELECT * FROM access_records WHERE entry = ?1")?;
         let mut rows = stmt.query(params![entry])?;
 
+        let mut res = vec![];
+        while let Some(row) = rows.next()? {
+            let meta = row_to_meta(row);
+            res.push(meta);
+        }
+        Ok(res)
+    }
+
+    /// 按path查找元数据
+    fn find_by_path(&self, path: &PathBuf) -> Result<Option<EntryMeta>, CustomError> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT * FROM access_records WHERE path = ?1")?;
+        let mut rows = stmt.query(params![path.to_string_lossy()])?;
+
         if let Some(row) = rows.next()? {
-            let meta: Vec<u8> = row.get(0)?;
-            let entry_meta: EntryMeta =
-                bincode::deserialize(&meta).map_err(|e| CustomError::Bincode(*e))?;
-            Ok(Some(entry_meta))
+            let meta = row_to_meta(row);
+            Ok(Some(meta))
         } else {
             Ok(None)
         }
     }
 
-    /// 按主键删除记录
-    fn delete_by_entry(&self, entry: String) -> Result<(), CustomError> {
+    /// 按entry删除记录
+    fn delete_by_entry(&self, entry: &str) -> Result<(), CustomError> {
         self.conn.execute(
             "DELETE FROM access_records WHERE entry = ?1",
             params![entry],
@@ -98,30 +135,152 @@ impl Database for SqliteDatabase {
         Ok(())
     }
 
-    /// 按主键更新 meta
-    fn update_meta(&self, entry: String, meta: EntryMeta) -> Result<(), CustomError> {
-        // 如果entry为主键的记录不存在, 则插入
-        if self.find_by_entry(entry.clone())?.is_none() {
-            self.create_event(meta.path.clone(), meta)?;
-        } else {
-            let meta_s = bincode::serialize(&meta).map_err(|e| CustomError::Bincode(*e))?;
-            self.conn.execute(
-                "UPDATE access_records SET meta = ?1 WHERE entry = ?2",
-                params![meta_s, entry],
-            )?;
-        }
+    /// 按path删除记录
+    fn delete_by_path(&self, entry: &PathBuf) -> Result<(), CustomError> {
+        self.conn.execute(
+            "DELETE FROM access_records WHERE path = ?1",
+            params![entry.to_string_lossy()],
+        )?;
+        Ok(())
+    }
 
+    /// 按主键更新 meta
+    fn update_meta(&self, path: &PathBuf, meta: &EntryMeta) -> Result<(), CustomError> {
+        // 如果path的记录不存在, 则插入
+        if self.find_by_path(path)?.is_some() {
+            // 最简单的方式是删除原记录再插入一个新纪录
+            self.delete_by_path(path)?;
+        }
+        self.insert_rec(&meta.path, &meta)?;
+
+        Ok(())
+    }
+
+    /// 删除所有数据
+    fn delete_all(&self) -> Result<(), CustomError> {
+        self.conn.execute("DELETE FROM access_records", params![])?;
         Ok(())
     }
 }
 
-mod test {
-    #[test]
-    fn test_find_all() {
-        use super::*;
-        let db = SqliteDatabase::new("/home/toni/proj/file_elf/sqlite3.db").unwrap();
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-        let res = db.find_all();
-        println!("{:?}", res);
+    fn get_db() -> SqliteDatabase {
+        let db = SqliteDatabase::new("/home/toni/proj/file_elf/sqlite3-test.db").unwrap();
+        db.delete_all().unwrap();
+        db
+    }
+
+    #[test]
+    fn test_create_table() {
+        let db = get_db();
+        assert!(db.create_table().is_ok());
+    }
+
+    #[test]
+    fn test_insert_and_find_by_path() {
+        let db = get_db();
+        db.create_table().unwrap();
+
+        let entry_meta = EntryMeta {
+            path: PathBuf::from("/test/path"),
+            size: 1024,
+            modified: SystemTime::now(),
+            access_count: 1,
+            entry_type: "Dir".parse().unwrap(),
+        };
+
+        db.insert_rec(&entry_meta.path, &entry_meta).unwrap();
+        let result = db.find_by_path(&entry_meta.path).unwrap();
+
+        assert!(result.is_some());
+        let found_meta = result.unwrap();
+        assert_eq!(found_meta.path, entry_meta.path);
+        assert_eq!(found_meta.size, entry_meta.size);
+
+        let entry_meta = EntryMeta {
+            path: PathBuf::from("/test2/path"), // entry相同, path不同
+            size: 1024,
+            modified: SystemTime::now(),
+            access_count: 1,
+            entry_type: "Dir".parse().unwrap(),
+        };
+
+        db.insert_rec(&entry_meta.path, &entry_meta).unwrap();
+        let result = db.find_by_path(&entry_meta.path).unwrap();
+
+        assert!(result.is_some());
+        let found_meta = result.unwrap();
+        assert_eq!(found_meta.path, entry_meta.path);
+        assert_eq!(found_meta.size, entry_meta.size);
+    }
+
+    #[test]
+    fn test_find_by_entry() {
+        let db = get_db();
+        db.create_table().unwrap();
+
+        let entry_meta = EntryMeta {
+            path: PathBuf::from("/test/path"),
+            size: 1024,
+            modified: SystemTime::now(),
+            access_count: 1,
+            entry_type: "Dir".parse().unwrap(),
+        };
+
+        db.insert_rec(&entry_meta.path, &entry_meta).unwrap();
+        let result = db.find_by_entry("path").unwrap();
+
+        assert_eq!(result.len(), 1);
+        let found_meta = &result[0];
+        assert_eq!(found_meta.path, entry_meta.path);
+        assert_eq!(found_meta.size, entry_meta.size);
+    }
+
+    #[test]
+    fn test_update_meta() {
+        let db = get_db();
+        db.create_table().unwrap();
+
+        let mut entry_meta = EntryMeta {
+            path: PathBuf::from("/test/path/1.txt"),
+            size: 1024,
+            modified: SystemTime::now(),
+            access_count: 1,
+            entry_type: "File".parse().unwrap(),
+        };
+
+        db.insert_rec(&entry_meta.path, &entry_meta).unwrap();
+
+        // Update the meta
+        entry_meta.size = 2048;
+        db.update_meta(&entry_meta.path, &entry_meta).unwrap();
+
+        let result = db.find_by_path(&entry_meta.path).unwrap();
+        assert!(result.is_some());
+        let updated_meta = result.unwrap();
+        assert_eq!(updated_meta.size, 2048);
+    }
+
+    #[test]
+    fn test_delete_by_path() {
+        let db = get_db();
+        db.create_table().unwrap();
+
+        let entry_meta = EntryMeta {
+            path: PathBuf::from("/test/path/2.txt"),
+            size: 1024,
+            modified: SystemTime::now(),
+            access_count: 1,
+            entry_type: "File".parse().unwrap(),
+        };
+
+        db.insert_rec(&entry_meta.path, &entry_meta).unwrap();
+        db.delete_by_path(&entry_meta.path).unwrap();
+
+        let result = db.find_by_path(&entry_meta.path).unwrap();
+        assert!(result.is_none());
     }
 }

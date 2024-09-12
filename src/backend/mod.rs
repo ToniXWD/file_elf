@@ -12,7 +12,7 @@ use crate::db::Database;
 
 use crate::cache::CACHER; // 导入缓存模块
 
-pub fn file_checker(db: Arc<Mutex<dyn Database>>, target: String) {
+pub fn file_checker(db: Arc<Mutex<dyn Database>>, target: &str) {
     let (tx, rx) = mpsc::channel();
     let mut watcher: RecommendedWatcher = Watcher::new(tx, Duration::from_secs(1)).unwrap();
 
@@ -49,29 +49,26 @@ pub fn file_checker(db: Arc<Mutex<dyn Database>>, target: String) {
                         println!("File created or wirte: {:?}", path);
 
                         if let Some(meta) = cacher_guard.search_path(&path, true) {
-                            let entry = path.file_name().unwrap().to_str().unwrap().to_string();
-
                             // 缓存中存在, 更新数据库
                             db_sender
                                 .send(DbMsg {
                                     action: writer::DbAction::UPDATE,
-                                    entry: Some(entry),
-                                    path: None,
+                                    entry: None,
+                                    path: Some(path),
                                     meta: Some(meta),
                                 })
                                 .unwrap();
                         } else {
                             // 缓存中不存在
-                            let entry = path.file_name().unwrap().to_str().unwrap().to_string();
                             // 缓存中没有, 尝试从数据库中获取
-                            if let Ok(meta) = db.lock().unwrap().find_by_entry(entry.clone()) {
+                            if let Ok(meta) = db.lock().unwrap().find_by_path(&path) {
                                 // 数据库查询到后还需要更新
                                 if let Ok(Some(meta)) = cacher_guard.add_path(&path, meta, true) {
                                     db_sender
                                         .send(DbMsg {
                                             action: writer::DbAction::UPDATE,
-                                            entry: Some(entry),
-                                            path: None,
+                                            entry: None,
+                                            path: Some(path),
                                             meta: Some(meta),
                                         })
                                         .unwrap();
@@ -98,9 +95,10 @@ pub fn file_checker(db: Arc<Mutex<dyn Database>>, target: String) {
                         }
 
                         println!("File removed: {:?}", path);
-                        _ = db.lock().unwrap().delete_by_entry(
-                            path.file_name().unwrap().to_str().unwrap().to_string(),
-                        ); // 数据库删除
+                        _ = db
+                            .lock()
+                            .unwrap()
+                            .delete_by_entry(path.file_name().unwrap().to_str().unwrap()); // 数据库删除
                         cacher_guard.remove_path(&path); // 缓存删除
                     }
                     DebouncedEvent::Rename(old_path, new_path) => {
