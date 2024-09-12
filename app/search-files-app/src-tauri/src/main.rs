@@ -1,7 +1,9 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use std::env;
 use std::path::PathBuf;
+use std::process::Command;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Duration;
@@ -54,7 +56,38 @@ fn open_directory(path: &PathBuf) {
     }
 }
 
+fn launch_file_elf() {
+    // 获取当前目录
+    let current_dir = env::current_dir().expect("Failed to get current directory");
+
+    // 判断操作系统，选择正确的文件名
+    #[cfg(target_os = "windows")]
+    let elf_file = "file_elf.exe";
+
+    #[cfg(not(target_os = "windows"))]
+    let elf_file = "file_elf";
+
+    // 生成文件路径
+    let elf_path = current_dir.join(elf_file);
+
+    // 如果文件存在，则启动子进程
+    if elf_path.exists() {
+        println!("Found backend executable: {}", elf_file);
+        let result = Command::new(elf_path).spawn(); // 启动子进程
+
+        match result {
+            Ok(_) => println!("Backend process started successfully."),
+            Err(e) => eprintln!("Failed to start backend process: {}", e),
+        }
+    } else {
+        eprintln!("Backend executable not found: {}", elf_file);
+    }
+}
+
 fn main() {
+    // 启动后端程序(生产环境)
+    launch_file_elf();
+
     // 创建托盘菜单项
     let hide = CustomMenuItem::new("hide".to_string(), "Hide");
     let show = CustomMenuItem::new("show".to_string(), "Show");
