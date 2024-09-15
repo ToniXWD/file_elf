@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex};
 use std::{sync::mpsc, time::Duration};
 
 use notify::{DebouncedEvent, RecommendedWatcher, RecursiveMode, Watcher};
-use writer::DbMsg;
+use writer::DbAction;
 
 use crate::db::Database;
 
@@ -17,7 +17,7 @@ pub fn file_checker(db: Arc<Mutex<dyn Database>>, target: &str) {
     let (tx, rx) = mpsc::channel();
     let mut watcher: RecommendedWatcher = Watcher::new(tx, Duration::from_secs(1)).unwrap();
 
-    let (db_sender, db_receiver): (Sender<DbMsg>, Receiver<DbMsg>) = mpsc::channel();
+    let (db_sender, db_receiver): (Sender<DbAction>, Receiver<DbAction>) = mpsc::channel();
 
     // 启动后台数据库写入线程
     let db_w = db.clone();
@@ -74,7 +74,7 @@ pub fn file_checker(db: Arc<Mutex<dyn Database>>, target: &str) {
     }
 }
 
-fn new_event_handler(path: &PathBuf, db_sender: &Sender<DbMsg>, db: Arc<Mutex<dyn Database>>) {
+fn new_event_handler(path: &PathBuf, db_sender: &Sender<DbAction>, db: Arc<Mutex<dyn Database>>) {
     let db_guard = db.lock().unwrap();
     let db_path = db_guard.get_db_path().clone();
     drop(db_guard);
@@ -91,12 +91,7 @@ fn new_event_handler(path: &PathBuf, db_sender: &Sender<DbMsg>, db: Arc<Mutex<dy
     if let Some(meta) = cacher_guard.search_path(&path, true) {
         // 缓存中存在, 更新数据库
         db_sender
-            .send(DbMsg {
-                action: writer::DbAction::UPDATE,
-                entry: None,
-                path: Some(path.clone()),
-                meta: Some(meta),
-            })
+            .send(DbAction::UPDATE(path.clone(), meta))
             .unwrap();
     } else {
         // 缓存中不存在
@@ -105,24 +100,14 @@ fn new_event_handler(path: &PathBuf, db_sender: &Sender<DbMsg>, db: Arc<Mutex<dy
             // 数据库查询到后还需要更新
             if let Ok(Some(meta)) = cacher_guard.add_path(&path, meta, true) {
                 db_sender
-                    .send(DbMsg {
-                        action: writer::DbAction::UPDATE,
-                        entry: None,
-                        path: Some(path.clone()),
-                        meta: Some(meta),
-                    })
+                    .send(DbAction::UPDATE(path.clone(), meta))
                     .unwrap();
             }
         } else {
             // 数据库没有, 直接在缓存新建, 新建后插入数据库
             if let Ok(Some(meta)) = cacher_guard.add_path(&path, None, true) {
                 db_sender
-                    .send(DbMsg {
-                        action: writer::DbAction::CREATE,
-                        entry: None,
-                        path: Some(path.clone()),
-                        meta: Some(meta),
-                    })
+                    .send(DbAction::CREATE(path.clone(), meta))
                     .unwrap();
             }
         }
@@ -130,12 +115,10 @@ fn new_event_handler(path: &PathBuf, db_sender: &Sender<DbMsg>, db: Arc<Mutex<dy
 }
 
 #[allow(unused)]
-fn del_event_handler(path: &PathBuf, db_sender: &Sender<DbMsg>, db: Arc<Mutex<dyn Database>>) {
+fn del_event_handler(path: &PathBuf, db_sender: &Sender<DbAction>, db: Arc<Mutex<dyn Database>>) {
     let db_guard = db.lock().unwrap();
     let db_path = db_guard.get_db_path().clone();
     drop(db_guard);
-
-    let mut cacher_guard = CACHER.lock().unwrap();
 
     // TODO: 后续需要支持在配置文件里面设置黑名单
     if path.eq(&db_path) {
@@ -145,6 +128,8 @@ fn del_event_handler(path: &PathBuf, db_sender: &Sender<DbMsg>, db: Arc<Mutex<dy
 
     println!("File removed: {:?}", path);
     _ = db.lock().unwrap().delete_by_path(&path); // 数据库删除
+
+    let mut cacher_guard = CACHER.lock().unwrap();
 
     cacher_guard.remove_path(&path); // 缓存删除
 }

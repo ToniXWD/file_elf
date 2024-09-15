@@ -11,9 +11,15 @@ pub use meta::EntryMeta;
 use rusqlite::Error as RusqliteError;
 
 lazy_static! {
-    pub static ref DB: Arc<Mutex<dyn Database>> = Arc::new(Mutex::new(
-        SqliteDatabase::new(&CONF.database.path).unwrap(),
-    ));
+    pub static ref DB: Arc<Mutex<dyn Database>> =
+        Arc::new(Mutex::new(match CONF.database.dbtype.as_str() {
+            "sqlite" => {
+                SqliteDatabase::new(&CONF.database.path).unwrap()
+            }
+            st => {
+                panic!("Unsupported database type: {}", st)
+            }
+        },));
 }
 
 /// 定义自定义错误类型

@@ -11,10 +11,22 @@
     "version": "0.1.0"
   },
   "tauri": {
+    "cli": {
+      "description": "xxx",
+      "longDescription": "xxx",
+      "beforeHelp": "xxx",
+      "afterHelp": "xxx",
+      "args": [
+        {
+          "name": "has-window",
+          "short": "h",
+          "multipleOccurrences": true
+        }
+      ]
+    },
     "systemTray": {
       "iconPath": "icons/32x32.png"
     },
-
     "allowlist": {
       "all": false
     },

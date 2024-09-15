@@ -59,7 +59,7 @@ fn open_directory(path: &PathBuf) {
     }
 }
 
-fn launch_file_elf() {
+fn launch_file_elf(has_window: bool) {
     // 获取当前目录
     let current_dir = env::current_dir().expect("Failed to get current directory");
 
@@ -78,16 +78,29 @@ fn launch_file_elf() {
         println!("Found backend executable: {}", elf_file);
 
         #[cfg(target_os = "windows")]
-        let result = Command::new(elf_path)
-            .creation_flags(0x08000000) // CREATE_NO_WINDOW flag for Windows
-            .spawn(); // 启动子进程
+        {
+            let result;
+
+            if has_window {
+                result = Command::new(elf_path).spawn(); // 启动子进程
+            } else {
+                result = Command::new(elf_path)
+                    .creation_flags(0x08000000) // CREATE_NO_WINDOW flag for Windows
+                    .spawn(); // 启动子进程
+            }
+            match result {
+                Ok(_) => println!("Backend process started successfully."),
+                Err(e) => eprintln!("Failed to start backend process: {}", e),
+            }
+        }
 
         #[cfg(not(target_os = "windows"))]
-        let result = Command::new(elf_path).spawn(); // 启动子进程 (非Windows平台)
-
-        match result {
-            Ok(_) => println!("Backend process started successfully."),
-            Err(e) => eprintln!("Failed to start backend process: {}", e),
+        {
+            let result = Command::new(elf_path).spawn(); // 启动子进程 (非Windows平台)
+            match result {
+                Ok(_) => println!("Backend process started successfully."),
+                Err(e) => eprintln!("Failed to start backend process: {}", e),
+            }
         }
     } else {
         eprintln!("Backend executable not found: {}", elf_file);
@@ -95,9 +108,6 @@ fn launch_file_elf() {
 }
 
 fn main() {
-    // 启动后端程序(生产环境)
-    launch_file_elf();
-
     // 创建托盘菜单项
     let hide = CustomMenuItem::new("hide".to_string(), "Hide");
     let show = CustomMenuItem::new("show".to_string(), "Show");
@@ -138,6 +148,23 @@ fn main() {
             }
         })
         .setup(|app| {
+            match app.get_cli_matches() {
+                // `matches` here is a Struct with { args, subcommand }.
+                // `args` is `HashMap<String, ArgData>` where `ArgData` is a struct with { value, occurrences }.
+                // `subcommand` is `Option<Box<SubcommandMatches>>` where `SubcommandMatches` is a struct with { name, matches }.
+                Ok(matches) => {
+                    if let Some(has_window) = matches.args.get("has-window") {
+                        // 启动后端程序(生产环境)
+                        launch_file_elf(has_window.value.as_bool().unwrap());
+                    } else {
+                        launch_file_elf(false);
+                    }
+                }
+                Err(e) => {
+                    eprintln!("get_cli_matches {:?}", e)
+                }
+            }
+
             let window = app.get_window("main").unwrap();
 
             // 使用 Arc 和 Mutex 来包装 last_press_time 以便在多线程环境中安全地修改
