@@ -8,7 +8,6 @@ use std::{
 
 use lazy_static::lazy_static;
 pub use meta::EntryMeta;
-use rusqlite::Error as RusqliteError;
 
 lazy_static! {
     pub static ref DB: Arc<Mutex<dyn Database>> =
@@ -20,32 +19,6 @@ lazy_static! {
                 panic!("Unsupported database type: {}", st)
             }
         },));
-}
-
-/// 定义自定义错误类型
-#[derive(Debug)]
-pub enum CustomError {
-    Io(std::io::Error),
-    Bincode(bincode::ErrorKind),
-    Rusqlite(RusqliteError),
-}
-
-impl From<std::io::Error> for CustomError {
-    fn from(err: std::io::Error) -> Self {
-        CustomError::Io(err)
-    }
-}
-
-impl From<bincode::ErrorKind> for CustomError {
-    fn from(err: bincode::ErrorKind) -> Self {
-        CustomError::Bincode(err)
-    }
-}
-
-impl From<RusqliteError> for CustomError {
-    fn from(err: RusqliteError) -> Self {
-        CustomError::Rusqlite(err)
-    }
 }
 
 // 定义一个数据库操作的 trait
@@ -62,7 +35,7 @@ pub trait Database: Send {
     fn delete_all(&self) -> Result<(), CustomError>;
 }
 
-use crate::config::CONF;
+use crate::{config::CONF, util::errors::CustomError};
 
 // 导入具体的数据库实现
 pub use self::sqlite::SqliteDatabase;

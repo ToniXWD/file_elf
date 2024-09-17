@@ -1,7 +1,8 @@
-use std::{collections::HashMap, io::Error, path::PathBuf};
+use std::{collections::HashMap, path::PathBuf};
 
 use crate::db::meta::EntryMeta;
 
+use crate::util::errors::CustomError;
 use crate::util::{pattern_match, regex_match};
 
 pub struct TrieCache {
@@ -36,7 +37,7 @@ impl TrieCache {
         path: &PathBuf,
         meta: Option<EntryMeta>,
         update_count: bool,
-    ) -> Result<Option<EntryMeta>, Error> {
+    ) -> Result<Option<EntryMeta>, CustomError> {
         let paths = path
             .components()
             .map(|elem| elem.as_os_str().to_str().unwrap())
@@ -52,7 +53,7 @@ impl TrieCache {
         self.root.search_full_path(paths, update_count).is_some()
     }
 
-    pub fn delete(&mut self, path: &PathBuf) -> Result<(), String> {
+    pub fn delete(&mut self, path: &PathBuf) -> Result<(), CustomError> {
         let paths = path
             .components()
             .map(|elem| elem.as_os_str().to_str().unwrap())
@@ -79,7 +80,7 @@ impl TrieNode {
         }
     }
 
-    fn new_with_path(path: &PathBuf) -> Result<TrieNode, std::io::Error> {
+    fn new_with_path(path: &PathBuf) -> Result<TrieNode, CustomError> {
         // 尝试获取文件名
         let file_name = path.file_name();
         let entry_name = match file_name {
@@ -160,7 +161,7 @@ impl TrieNode {
         path: Vec<&str>,
         meta: Option<EntryMeta>,
         update_count: bool,
-    ) -> Result<Option<EntryMeta>, Error> {
+    ) -> Result<Option<EntryMeta>, CustomError> {
         let mut full_path = self.full_path.clone(); // 初始化完整路径
         let mut cur_node = self;
 
@@ -169,23 +170,17 @@ impl TrieNode {
             let new_path = full_path.join(component_str.clone());
             let new_node_res = TrieNode::new_with_path(&new_path);
 
-            match new_node_res {
-                Ok(mut new_node) => {
-                    // 检查子节点是否存在，如果不存在则创建新的节点
-                    cur_node
-                        .children
-                        .entry(component_str.clone())
-                        .or_insert_with(|| {
-                            if idx == path.len() - 1 && meta.is_some() {
-                                new_node.meta = meta.clone().unwrap();
-                            }
-                            Box::new(new_node)
-                        });
-                }
-                Err(e) => {
-                    return Err(e);
-                }
-            }
+            let mut new_node = new_node_res?;
+            // 检查子节点是否存在，如果不存在则创建新的节点
+            cur_node
+                .children
+                .entry(component_str.clone())
+                .or_insert_with(|| {
+                    if idx == path.len() - 1 && meta.is_some() {
+                        new_node.meta = meta.clone().unwrap();
+                    }
+                    Box::new(new_node)
+                });
 
             // 移动到子节点并更新完整路径
             cur_node = &mut **cur_node.children.get_mut(&component_str).unwrap();
@@ -203,7 +198,7 @@ impl TrieNode {
         Ok(Some(cur_node.meta.clone()))
     }
 
-    pub fn delete(&mut self, path: Vec<&str>) -> Result<(), String> {
+    pub fn delete(&mut self, path: Vec<&str>) -> Result<(), CustomError> {
         let mut cur_node = self;
 
         for (index, component) in path.iter().enumerate() {
@@ -217,7 +212,7 @@ impl TrieNode {
                 }
                 cur_node = &mut **cur_node.children.get_mut(&component_str).unwrap();
             } else {
-                return Err("PathNotFound".to_string());
+                return Err(CustomError::from("PathNotFound"));
             }
         }
 

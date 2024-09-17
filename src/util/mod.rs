@@ -1,3 +1,5 @@
+pub mod errors;
+
 use std::path::PathBuf;
 
 use regex::Regex;

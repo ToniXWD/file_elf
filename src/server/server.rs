@@ -52,7 +52,7 @@ fn search(entry: String, is_fuzzy: bool) -> Json<Vec<String>> {
                 Json(res2)
             }
             Err(e) => {
-                println!("DB error: {:?}", e);
+                println!("DB error: {}", e);
                 Json(Vec::new())
             }
         }

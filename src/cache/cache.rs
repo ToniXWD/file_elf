@@ -1,10 +1,12 @@
 use std::{
-    io::Error,
     path::PathBuf,
     sync::{Arc, Mutex},
 };
 
-use crate::db::{meta::EntryMeta, Database};
+use crate::{
+    db::{meta::EntryMeta, Database},
+    util::errors::CustomError,
+};
 
 use super::{trie::TrieCache, CACHER};
 
@@ -50,7 +52,7 @@ impl Cacher {
         path: &PathBuf,
         meta: Option<EntryMeta>,
         update_count: bool,
-    ) -> Result<Option<EntryMeta>, Error> {
+    ) -> Result<Option<EntryMeta>, CustomError> {
         self.tree.insert_path(path, meta, update_count)
     }
 
@@ -62,11 +64,7 @@ impl Cacher {
         self.tree.contains_full_path(path, update_count)
     }
 
-    pub fn search_path(
-        &mut self,
-        path: &PathBuf,
-        update_count: bool,
-    ) -> Option<EntryMeta> {
+    pub fn search_path(&mut self, path: &PathBuf, update_count: bool) -> Option<EntryMeta> {
         self.tree.search_full_path(path, update_count)
     }
 

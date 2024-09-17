@@ -3,6 +3,8 @@ use std::{path::PathBuf, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 
+use crate::util::errors::CustomError;
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum EntryType {
     Dir,
@@ -21,7 +23,7 @@ impl ToString for EntryType {
 }
 
 impl FromStr for EntryType {
-    type Err = String;
+    type Err = CustomError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s == "Dir" {
@@ -51,7 +53,7 @@ pub struct EntryMeta {
 
 impl EntryMeta {
     /// 从路径创建一个新的 EntryMeta
-    pub fn new(path: &PathBuf) -> Result<EntryMeta, std::io::Error> {
+    pub fn new(path: &PathBuf) -> Result<EntryMeta, CustomError> {
         // 如何判断path是空字符串?
         if path.to_str().unwrap().is_empty() {
             return EntryMeta::new_empty();
@@ -73,7 +75,7 @@ impl EntryMeta {
         })
     }
 
-    pub fn new_empty() -> Result<EntryMeta, std::io::Error> {
+    pub fn new_empty() -> Result<EntryMeta, CustomError> {
         Ok(EntryMeta {
             path: PathBuf::new(),
             size: 0,
