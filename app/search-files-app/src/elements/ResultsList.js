@@ -1,38 +1,21 @@
-import React, { useState } from 'react';
-import { Modal, Button, ListGroup } from 'react-bootstrap';
+import React from 'react';
+import ListGroup from 'react-bootstrap';
 import ResultItem from './ResultItem.js';
 
-const ResultsListModal = ({ results, addMessage }) => {
-    const [show, setShow] = useState(false);
-
-    const handleClose = () => setShow(false);
-    const handleShow = () => setShow(true);
+const ResultsList = ({ results, addMessage }) => {
+    // 移除了模态相关的状态和处理函数
 
     return (
         <>
-            <Button variant="primary" onClick={handleShow}>
-                Show Results
-            </Button>
+            {/* 移除了展示模态按钮 */}
 
-            <Modal show={show} onHide={handleClose} size="lg">
-                <Modal.Header closeButton>
-                    <Modal.Title>Results</Modal.Title>
-                </Modal.Header>
-                <Modal.Body style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                    <ListGroup>
-                        {results.map((result, index) => (
-                            <ResultItem key={index} result={result} addMessage={addMessage} />
-                        ))}
-                    </ListGroup>
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={handleClose}>
-                        Close
-                    </Button>
-                </Modal.Footer>
-            </Modal>
+            <ListGroup style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                {results.map((result, index) => (
+                    <ResultItem key={index} result={result} addMessage={addMessage} />
+                ))}
+            </ListGroup>
         </>
     );
 };
 
-export default ResultsListModal;
+export default ResultsList;

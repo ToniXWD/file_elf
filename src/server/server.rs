@@ -1,4 +1,8 @@
-use rocket::{get, routes, serde::json::Json};
+use rocket::{
+    get, routes,
+    serde::json::Json,
+    tokio::{signal, spawn},
+};
 
 use crate::{cache::CACHER, db::DB};
 
@@ -85,9 +89,20 @@ pub async fn init_route() {
         .attach(CORS);
 
     // 启动 Rocket 服务器并处理错误
-    if let Err(e) = rocket_instance.launch().await {
-        eprintln!("Failed to launch Rocket: {}", e);
-    } else {
-        println!("Rocket is running and listening for requests.");
-    }
+    let _rocket_handler = spawn(async move {
+        if let Err(e) = rocket_instance.launch().await {
+            eprintln!("Failed to launch Rocket: {}", e);
+        } else {
+            println!("Rocket is running and listening for requests.");
+        }
+    });
+
+    // 处理信号
+    signal::ctrl_c()
+        .await
+        .expect("Failed to listen for ctrl_c signal");
+    println!("Received Ctrl+C, shutting down...");
+    // _rocket_handler.abort();
+    // 强制退出整个进程
+    std::process::exit(1);
 }
