@@ -1,5 +1,5 @@
 import React from 'react';
-import ListGroup from 'react-bootstrap';
+import {ListGroup} from 'react-bootstrap';
 import ResultItem from './ResultItem.js';
 
 const ResultsList = ({ results, addMessage }) => {

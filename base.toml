@@ -1,4 +1,6 @@
 [database]
-dbtype = "sqlite"
-path = "/home/toni/proj/file_elf/sqlite3.db"
-targets = ["/home/toni/Course", "/home/toni/proj"]
+dbtype = "sqlite" # 数据库类型
+path = "/home/toni/proj/file_elf/sqlite3.db" # 数据库文件路径
+targets = ["/home/toni/Course", "/home/toni/proj"] # 监控目录
+blacklist = [".*/build/.*", ".*/target/.*"] # 黑名单列表，支持使用正则表达式
+

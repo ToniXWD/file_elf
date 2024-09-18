@@ -4,8 +4,8 @@ use std::{
 };
 
 use crate::{
-    db::{meta::EntryMeta, Database},
-    util::errors::CustomError,
+    db::{meta::EntryMeta, Database, DB},
+    util::{errors::CustomError, is_excluded},
 };
 
 use super::{trie::TrieCache, CACHER};
@@ -21,8 +21,19 @@ pub fn init_trie(db: Arc<Mutex<dyn Database>>) {
     let mut cache_guard = CACHER.lock().unwrap();
     let trie = &mut cache_guard.tree.root;
 
+    let mut del_paths = Vec::new();
+
     for (entry, meta) in data {
         let path = meta.path.clone();
+        // 判断是不是 不存在的文件 or 处于黑名单中的文件
+        if is_excluded(&path) {
+            println!(
+                "path not exists or in blacklist: {:#?}, marked as deleted",
+                &path
+            );
+            del_paths.push(path);
+            continue;
+        }
         let paths = path
             .components()
             .map(|elem| elem.as_os_str().to_str().unwrap())
@@ -38,6 +49,18 @@ pub fn init_trie(db: Arc<Mutex<dyn Database>>) {
             }
         }
     }
+
+    // 清理数据库中: 不存在的文件 + 处于黑名单中的文件
+    del_paths
+        .into_iter()
+        .for_each(|path| match guard.delete_by_path(&path) {
+            Ok(_) => {
+                println!("delete path in DB: {:?}", path);
+            }
+            Err(e) => {
+                println!("delete path error: {}", e);
+            }
+        });
 }
 
 impl Cacher {
@@ -78,13 +101,13 @@ impl Cacher {
 }
 
 mod test {
-
     #[test]
     fn test_init() {
         use super::*;
         use crate::db::SqliteDatabase;
 
-        let db = SqliteDatabase::new("/home/toni/proj/file_elf/sqlite3.db").unwrap();
+        let db =
+            SqliteDatabase::new(&PathBuf::from("/home/toni/proj/file_elf/sqlite3.db")).unwrap();
 
         init_trie(Arc::new(Mutex::new(db)));
     }

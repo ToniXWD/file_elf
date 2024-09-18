@@ -29,8 +29,10 @@ pub trait Database: Send {
     fn insert_rec(&self, path: &PathBuf, meta: &EntryMeta) -> Result<(), CustomError>;
     fn find_by_entry(&self, entry: &str) -> Result<Vec<EntryMeta>, CustomError>;
     fn find_by_path(&self, path: &PathBuf) -> Result<Option<EntryMeta>, CustomError>;
+    fn find_by_path_prefix(&self, path: &PathBuf) -> Result<Vec<EntryMeta>, CustomError>;
     fn delete_by_entry(&self, entry: &str) -> Result<(), CustomError>;
-    fn delete_by_path(&self, entry: &PathBuf) -> Result<(), CustomError>;
+    fn delete_by_path(&self, path: &PathBuf) -> Result<(), CustomError>;
+    fn delete_by_path_prefix(&self, path: &PathBuf) -> Result<(), CustomError>;
     fn update_meta(&self, path: &PathBuf, meta: &EntryMeta) -> Result<(), CustomError>;
     fn delete_all(&self) -> Result<(), CustomError>;
 }

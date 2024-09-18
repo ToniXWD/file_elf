@@ -34,7 +34,7 @@ fn row_to_meta(row: &Row<'_>) -> EntryMeta {
 
 impl SqliteDatabase {
     /// 创建一个新的 `SqliteDatabase` 实例
-    pub fn new(database_path: &str) -> Result<Self, CustomError> {
+    pub fn new(database_path: &PathBuf) -> Result<Self, CustomError> {
         let conn = if std::path::Path::new(database_path).exists() {
             Connection::open(database_path)?
         } else {
@@ -126,7 +126,24 @@ impl Database for SqliteDatabase {
         }
     }
 
-    /// 按entry删除记录
+    /// 按path查找元数据
+    fn find_by_path_prefix(&self, path: &PathBuf) -> Result<Vec<EntryMeta>, CustomError> {
+        let path_with_wildcard = format!("{}%", path.to_string_lossy());
+        let mut stmt = self
+            .conn
+            .prepare("SELECT * FROM access_records WHERE path LIKE ?1")?;
+        let mut rows = stmt.query(params![path_with_wildcard])?;
+
+        let mut res = Vec::new();
+
+        while let Some(row) = rows.next()? {
+            let meta = row_to_meta(row);
+            res.push(meta);
+        }
+        Ok(res)
+    }
+
+    /// 删除指定路径的单个记录
     fn delete_by_entry(&self, entry: &str) -> Result<(), CustomError> {
         self.conn.execute(
             "DELETE FROM access_records WHERE entry = ?1",
@@ -137,6 +154,7 @@ impl Database for SqliteDatabase {
 
     /// 按path删除记录
     fn delete_by_path(&self, entry: &PathBuf) -> Result<(), CustomError> {
+        println!("delete_by_path: {}", entry.to_string_lossy());
         self.conn.execute(
             "DELETE FROM access_records WHERE path = ?1",
             params![entry.to_string_lossy()],
@@ -144,16 +162,35 @@ impl Database for SqliteDatabase {
         Ok(())
     }
 
-    /// 按主键更新 meta
+    /// 按path前缀匹配删除记录
+    fn delete_by_path_prefix(&self, path: &PathBuf) -> Result<(), CustomError> {
+        let path_with_wildcard = format!("{}%", path.to_string_lossy());
+        println!("delete_by_path_prefix: {}", path_with_wildcard);
+        self.conn.execute(
+            "DELETE FROM access_records WHERE path LIKE ?1",
+            params![path_with_wildcard],
+        )?;
+        Ok(())
+    }
+
+    /// 按path更新 meta
     fn update_meta(&self, path: &PathBuf, meta: &EntryMeta) -> Result<(), CustomError> {
         // 如果path的记录不存在, 则插入
-        if self.find_by_path(path)?.is_some() {
-            // 最简单的方式是删除原记录再插入一个新纪录
-            self.delete_by_path(path)?;
+        match self.find_by_path(path)? {
+            Some(_) => {
+                // 记录存在则更新
+                self.conn.execute(
+                    "UPDATE access_records SET size = ?2, modified = ?3, access_count = ?4, entry_type = ?5 WHERE path = ?1",
+                    params![path.to_string_lossy(), meta.size, system_to_unix_ts(&meta.modified), &meta.access_count, &meta.entry_type.to_string()],
+                )?;
+                Ok(())
+            }
+            None => {
+                // 记录不存在则新建
+                self.insert_rec(path, meta)?;
+                Ok(())
+            }
         }
-        self.insert_rec(&meta.path, &meta)?;
-
-        Ok(())
     }
 
     /// 删除所有数据
@@ -168,7 +205,8 @@ mod tests {
     use super::*;
 
     fn get_db() -> SqliteDatabase {
-        let db = SqliteDatabase::new("/home/toni/proj/file_elf/sqlite3-test.db").unwrap();
+        let db = SqliteDatabase::new(&PathBuf::from("/home/toni/proj/file_elf/sqlite3-test.db"))
+            .unwrap();
         db.delete_all().unwrap();
         db
     }
@@ -245,7 +283,7 @@ mod tests {
         db.create_table().unwrap();
 
         let mut entry_meta = EntryMeta {
-            path: PathBuf::from("/test/path/1.txt"),
+            path: PathBuf::from("/test/path/test_update_meta_1.txt"),
             size: 1024,
             modified: SystemTime::now(),
             access_count: 1,
@@ -282,5 +320,38 @@ mod tests {
 
         let result = db.find_by_path(&entry_meta.path).unwrap();
         assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_delete_path_prefix() {
+        let db = get_db();
+        db.create_table().unwrap();
+
+        let mut entry_meta = EntryMeta {
+            path: PathBuf::from("/test/path1"),
+            size: 1024,
+            modified: SystemTime::now(),
+            access_count: 1,
+            entry_type: "Dir".parse().unwrap(),
+        };
+
+        db.insert_rec(&entry_meta.path, &entry_meta).unwrap();
+
+        entry_meta.path = PathBuf::from("/test/path1/path2");
+        db.insert_rec(&entry_meta.path, &entry_meta).unwrap();
+
+        entry_meta.path = PathBuf::from("/test/path1/path2/test.txt");
+        entry_meta.entry_type = "File".parse().unwrap();
+        db.insert_rec(&entry_meta.path, &entry_meta).unwrap();
+
+        let result_ins = db
+            .find_by_path_prefix(&PathBuf::from("/test/path1"))
+            .unwrap();
+        assert_eq!(result_ins.len(), 3);
+        db.delete_by_path_prefix(&PathBuf::from("/test/path1"))
+            .unwrap();
+
+        let result_del = db.find_by_path(&PathBuf::from("/test/path1")).unwrap();
+        assert!(result_del.is_none());
     }
 }
