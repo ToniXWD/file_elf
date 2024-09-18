@@ -20,11 +20,11 @@ const SearchForm = () => {
         try {
             let response;
             if (isRegex) {
-                response = await axios.get('http://127.0.0.1:8000/file_elf/regex_search', {
+                response = await axios.get('http://127.0.0.1:6789/file_elf/regex_search', {
                     params: { path: entry }
                 });
             } else {
-                response = await axios.get('http://127.0.0.1:8000/file_elf/search', {
+                response = await axios.get('http://127.0.0.1:6789/file_elf/search', {
                     params: { entry, is_fuzzy: isFuzzy }
                 });
             }

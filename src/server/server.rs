@@ -84,7 +84,9 @@ fn regex_search(path: String) -> Json<Vec<String>> {
 }
 
 pub async fn init_route() {
-    let rocket_instance = rocket::build()
+    let figment = rocket::Config::figment().merge(("port", 6789));
+
+    let rocket_instance = rocket::custom(figment)
         .mount("/file_elf", routes![search, regex_search])
         .attach(CORS);
 

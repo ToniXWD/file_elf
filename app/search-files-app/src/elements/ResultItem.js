@@ -38,16 +38,16 @@ const ResultItem = ({ result, addMessage }) => {
         <ListGroup.Item>
             {result}{' '}
             <Button variant="outline-secondary" size="sm" onClick={() => openDir(result)}>
-                Open Dir
+                📁
             </Button>
             <Button variant="outline-secondary" size="sm" onClick={() => openFile(result)}>
-                Open File
+                📄
             </Button>
             <Button variant="outline-secondary" size="sm" onClick={() => copyPathToClipboard(result)}>
                 Copy Path
             </Button>
             <Button variant="outline-secondary" size="sm" onClick={() => toggleFavorite(result)}>
-                {favorites.includes(result) ? 'Unstar' : 'Star'}
+                {favorites.includes(result) ? '⭐' : '☆'}
             </Button>
         </ListGroup.Item>
     );

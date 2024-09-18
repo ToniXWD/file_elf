@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::{
-    db::{meta::EntryMeta, Database, DB},
+    db::{meta::EntryMeta, Database},
     util::{errors::CustomError, is_excluded},
 };
 
