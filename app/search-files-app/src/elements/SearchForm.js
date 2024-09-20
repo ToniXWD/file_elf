@@ -8,6 +8,7 @@ const SearchForm = () => {
     const [entry, setEntry] = useState('');
     const [isFuzzy, setIsFuzzy] = useState(false);
     const [isRegex, setIsRegex] = useState(false);
+    const [isSmart, setIsSmart] = useState(false);
     const [results, setResults] = useState([]);
     const [message, setMessage] = useState('');
     const [showToast, setShowToast] = useState(false);
@@ -19,7 +20,11 @@ const SearchForm = () => {
     const handleSearch = async () => {
         try {
             let response;
-            if (isRegex) {
+            if (isSmart) {
+                response = await axios.get('http://127.0.0.1:6789/file_elf/hot_search', {
+                    params: { entry, is_fuzzy: isFuzzy, is_regex: isRegex }
+                });
+            } else if (isRegex) {
                 response = await axios.get('http://127.0.0.1:6789/file_elf/regex_search', {
                     params: { path: entry }
                 });
@@ -75,6 +80,13 @@ const SearchForm = () => {
                             label="Is Regex?"
                             checked={isRegex}
                             onChange={(e) => setIsRegex(e.target.checked)}
+                        />
+                        <br />
+                        <Form.Check
+                            type="checkbox"
+                            label="Smart Mode?"
+                            checked={isSmart}
+                            onChange={(e) => setIsSmart(e.target.checked)}
                         />
                         <br />
                         <Button variant="primary" onClick={handleSearch}>Search</Button>

@@ -1,10 +1,13 @@
 use std::{
     fs,
     path::PathBuf,
-    sync::{mpsc::Receiver, Arc, Mutex},
+    sync::{
+        mpsc::{self, Receiver, Sender},
+        Arc, Mutex,
+    },
 };
 
-use crate::db::{Database, EntryMeta};
+use crate::db::{Database, EntryMeta, DB};
 
 #[allow(unused)]
 pub enum DbAction {
@@ -12,6 +15,23 @@ pub enum DbAction {
     FIND,
     DELETE(PathBuf),
     UPDATE(PathBuf, EntryMeta),
+}
+
+use lazy_static::lazy_static;
+
+// 使用 lazy_static 初始化全局的 Arc<Sender> 和 Receiver
+lazy_static! {
+    pub static ref SENDER: Sender<DbAction> = {
+        let (tx, rx) = mpsc::channel();
+
+
+    // 启动后台数据库写入线程
+    std::thread::spawn(move || {
+        db_writer(DB.clone(), rx);
+    });
+
+    tx // 返回全局共享的 Sender
+    };
 }
 
 pub fn db_writer(db: Arc<Mutex<dyn Database>>, db_receiver: Receiver<DbAction>) {

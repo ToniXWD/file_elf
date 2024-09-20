@@ -302,6 +302,7 @@ dependencies = [
  "serde",
  "strsim",
  "toml",
+ "walkdir",
 ]
 
 [[package]]

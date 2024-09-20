@@ -4,12 +4,6 @@
 use std::env;
 use std::path::PathBuf;
 use std::process::Command;
-use std::sync::Arc;
-use std::sync::Mutex;
-use std::time::Duration;
-use std::time::Instant;
-use tauri::GlobalShortcutManager;
-use tauri::{CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu};
 
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
@@ -108,93 +102,7 @@ fn launch_file_elf(has_window: bool) {
 }
 
 fn main() {
-    // 创建托盘菜单项
-    let hide = CustomMenuItem::new("hide".to_string(), "Hide");
-    let show = CustomMenuItem::new("show".to_string(), "Show");
-    let quit = CustomMenuItem::new("quit".to_string(), "Quit");
-
-    // 定义托盘菜单
-    let tray_menu = SystemTrayMenu::new()
-        .add_item(hide)
-        .add_item(show)
-        .add_item(quit);
-
-    // 初始化托盘
-    let system_tray = SystemTray::new().with_menu(tray_menu);
     tauri::Builder::default()
-        .system_tray(system_tray)
-        .on_system_tray_event(|app, event| match event {
-            SystemTrayEvent::MenuItemClick { id, .. } => {
-                let window = app.get_window("main").unwrap();
-                match id.as_str() {
-                    "hide" => {
-                        window.hide().unwrap();
-                    }
-                    "show" => {
-                        window.show().unwrap();
-                    }
-                    "quit" => {
-                        std::process::exit(0);
-                    }
-                    _ => {}
-                }
-            }
-            _ => {}
-        })
-        .on_window_event(|event| {
-            if let tauri::WindowEvent::CloseRequested { api, .. } = event.event() {
-                event.window().hide().unwrap();
-                api.prevent_close(); // 阻止窗口关闭
-            }
-        })
-        .setup(|app| {
-            match app.get_cli_matches() {
-                // `matches` here is a Struct with { args, subcommand }.
-                // `args` is `HashMap<String, ArgData>` where `ArgData` is a struct with { value, occurrences }.
-                // `subcommand` is `Option<Box<SubcommandMatches>>` where `SubcommandMatches` is a struct with { name, matches }.
-                Ok(matches) => {
-                    if let Some(has_window) = matches.args.get("has-window") {
-                        // 启动后端程序(生产环境)
-                        launch_file_elf(has_window.value.as_bool().unwrap());
-                    } else {
-                        launch_file_elf(false);
-                    }
-                }
-                Err(e) => {
-                    eprintln!("get_cli_matches {:?}", e)
-                }
-            }
-
-            let window = app.get_window("main").unwrap();
-
-            // 使用 Arc 和 Mutex 来包装 last_press_time 以便在多线程环境中安全地修改
-            let last_press_time = Arc::new(Mutex::new(Instant::now()));
-            let double_click_threshold = Duration::from_millis(500); // 设置双击阈值时间为 500 毫秒
-
-            let mut shortcut_manager = app.global_shortcut_manager();
-            let last_press_time_clone = Arc::clone(&last_press_time);
-
-            match shortcut_manager.register("Esc", move || {
-                let now = Instant::now();
-                let mut last_time = last_press_time_clone.lock().unwrap();
-
-                if now.duration_since(*last_time) < double_click_threshold {
-                    // 如果两次 Alt 键按下的时间间隔小于阈值，显示或隐藏窗口
-                    if window.is_visible().unwrap() {
-                        window.hide().unwrap();
-                    } else {
-                        window.show().unwrap();
-                        window.set_focus().unwrap(); // 让窗口获得焦点
-                    }
-                }
-                *last_time = now; // 更新 last_press_time
-            }) {
-                Ok(_) => println!("Shortcut registered successfully."),
-                Err(e) => println!("Failed to register shortcut: {}", e),
-            }
-
-            Ok(())
-        })
         .invoke_handler(tauri::generate_handler![open_file, open_dir])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

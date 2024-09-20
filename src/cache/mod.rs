@@ -1,5 +1,6 @@
 pub mod cache;
 pub mod trie;
+pub mod hot_dir;
 
 use std::sync::Mutex;
 

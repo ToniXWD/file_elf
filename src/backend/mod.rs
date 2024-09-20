@@ -67,7 +67,7 @@ pub fn file_checker(target: &str, db_sender: mpsc::Sender<DbAction>) {
     }
 }
 
-fn new_event_handler(path: &PathBuf, db_sender: &Sender<DbAction>) {
+pub fn new_event_handler(path: &PathBuf, db_sender: &Sender<DbAction>) {
     let mut cacher_guard = match CACHER.lock() {
         Ok(guard) => guard,
         Err(e) => panic!("lock cache error: {}", e),

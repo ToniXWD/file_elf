@@ -10,12 +10,14 @@ use crate::config::CONF;
 
 /// 模糊匹配
 pub fn pattern_match(entry: &str, pattern: &str, is_fuzzy: bool) -> bool {
+    let entry_l = entry.to_lowercase();
+    let pattern_l = pattern.to_lowercase();
     if is_fuzzy {
         // 设定一个模糊匹配的阈值，比如距离小于等于2
         let threshold = 2;
-        levenshtein(entry, pattern) <= threshold
+        levenshtein(&entry_l, &pattern_l) <= threshold
     } else {
-        entry == pattern
+        entry_l == pattern_l
     }
 }
 
@@ -64,7 +66,8 @@ pub fn is_blacklisted(file_path: &PathBuf) -> bool {
     false
 }
 
-mod test {
+#[cfg(test)]
+mod tests {
     #[allow(unused)]
     use super::*;
     #[test]

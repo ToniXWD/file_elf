@@ -1,27 +1,37 @@
 use std::{
+    collections::BinaryHeap,
     path::PathBuf,
     sync::{Arc, Mutex},
 };
 
 use crate::{
-    db::{meta::EntryMeta, Database},
+    config::CONF,
+    db::{
+        meta::{EntryMeta, EntryType},
+        Database,
+    },
     util::{errors::CustomError, is_excluded},
 };
 
-use super::{trie::TrieCache, CACHER};
+use super::{hot_dir::HOTDIR, trie::TrieCache, CACHER};
 
 pub struct Cacher {
     pub tree: TrieCache,
 }
 
 pub fn init_trie(db: Arc<Mutex<dyn Database>>) {
-    let guard = db.lock().unwrap();
+    let db_guard = db.lock().unwrap();
 
-    let data = guard.find_all();
+    let data = db_guard.find_all();
+    drop(db_guard); // 任何时刻只持有一把锁来避免死锁
+
     let mut cache_guard = CACHER.lock().unwrap();
     let trie = &mut cache_guard.tree.root;
 
     let mut del_paths = Vec::new();
+
+    // 创建一个 BinaryHeap 优先队列, 用于记录热点文件夹
+    let mut dir_heap: BinaryHeap<EntryMeta> = BinaryHeap::new();
 
     for (entry, meta) in data {
         let path = meta.path.clone();
@@ -34,6 +44,15 @@ pub fn init_trie(db: Arc<Mutex<dyn Database>>) {
             del_paths.push(path);
             continue;
         }
+
+        if meta.entry_type == EntryType::Dir {
+            // 记录热点文件夹
+            dir_heap.push(meta.clone());
+            if dir_heap.len() > CONF.database.hotdirnum {
+                dir_heap.pop();
+            }
+        }
+
         let paths = path
             .components()
             .map(|elem| elem.as_os_str().to_str().unwrap())
@@ -49,11 +68,13 @@ pub fn init_trie(db: Arc<Mutex<dyn Database>>) {
             }
         }
     }
+    drop(cache_guard); // 任何时刻只持有一把锁来避免死锁
 
+    let db_guard = db.lock().unwrap();
     // 清理数据库中: 不存在的文件 + 处于黑名单中的文件
     del_paths
         .into_iter()
-        .for_each(|path| match guard.delete_by_path(&path) {
+        .for_each(|path| match db_guard.delete_by_path(&path) {
             Ok(_) => {
                 println!("delete path in DB: {:?}", path);
             }
@@ -61,6 +82,18 @@ pub fn init_trie(db: Arc<Mutex<dyn Database>>) {
                 println!("delete path error: {}", e);
             }
         });
+    drop(db_guard); // 任何时刻只持有一把锁来避免死锁
+
+    match HOTDIR.write() {
+        Ok(mut hd_guard) => {
+            dir_heap.into_iter().for_each(|meta| {
+                hd_guard.push(meta); // 加入全局热点文件夹列表
+            });
+        }
+        Err(e) => {
+            eprintln!("lock HOTDIR failed: {}", e);
+        }
+    }
 }
 
 impl Cacher {
@@ -100,7 +133,8 @@ impl Cacher {
     }
 }
 
-mod test {
+#[cfg(test)]
+mod tests {
     #[test]
     fn test_init() {
         use super::*;

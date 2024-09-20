@@ -11,6 +11,7 @@ pub enum CustomError {
     Rusqlite(RusqliteError),
     Toml(TomlError),
     ErrStr(String),
+    UnknownErr,
 }
 
 impl From<std::io::Error> for CustomError {
@@ -58,6 +59,7 @@ impl fmt::Display for CustomError {
             CustomError::Rusqlite(rusqlite_err) => write!(f, "Rusqlite error: {}", rusqlite_err),
             CustomError::Toml(toml_err) => write!(f, "TOML error: {}", toml_err),
             CustomError::ErrStr(err_str) => write!(f, "Error: {}", err_str),
+            CustomError::UnknownErr => write!(f, "Error: {}", "unknown error"),
         }
     }
 }

@@ -112,7 +112,8 @@ impl TrieNode {
         let mut results = Vec::new();
 
         // 如果当前节点的名称与目标名称相匹配，将当前节点的路径加入结果
-        if pattern_match(entry_name, &self.entry_name, is_fuzzy) {
+
+        if pattern_match(&self.entry_name, entry_name, is_fuzzy) {
             results.push(self.full_path.clone());
         }
 
@@ -134,7 +135,7 @@ impl TrieNode {
 
         // TODO: 目前确实对正则表达式提前终止查询的优化
         for (_, child) in &self.children {
-            results.extend(child.search_path_regex(pattern_path));
+            results.append(&mut child.search_path_regex(pattern_path));
         }
         results
     }
@@ -220,7 +221,8 @@ impl TrieNode {
     }
 }
 
-mod test {
+#[cfg(test)]
+mod tests {
     #[test]
     fn simple_test() {
         use super::*;

@@ -23,6 +23,7 @@ pub struct DatabaseConfig {
     pub path: PathBuf,
     pub targets: Vec<String>,
     pub blacklist: Vec<String>, // 黑名单字段
+    pub hotdirnum: usize,
 }
 
 pub fn load_config(path: &str) -> Result<Config, CustomError> {
