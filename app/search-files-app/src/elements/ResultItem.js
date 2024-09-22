@@ -2,17 +2,20 @@ import React, { useState } from 'react';
 import { Button, ListGroup } from 'react-bootstrap';
 import axios from 'axios';
 
-const invoke = window.__TAURI__.core.invoke;
 
 const ResultItem = ({ result, addMessage }) => {
     const [favorited, setFavorited] = useState(result[1]);
 
     const openFile = (filePath) => {
+        const invoke = window.__TAURI__.core.invoke;
+
         invoke('open_file', { name: filePath });
         addMessage(`File opened: ${filePath}`);
     };
 
     const openDir = (filePath) => {
+        const invoke = window.__TAURI__.core.invoke;
+
         invoke('open_dir', { name: filePath });
         addMessage(`Directory opened: ${filePath}`);
     };

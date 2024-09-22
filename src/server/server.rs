@@ -70,6 +70,7 @@ fn search(entry: String, is_fuzzy: bool) -> Json<Vec<(String, bool)>> {
                     .into_iter()
                     .map(|elem| (elem.path.to_string_lossy().to_string(), true))
                     .collect();
+                println!("search: res2({:?})", res2);
                 Json(res2)
             }
             Err(e) => {
@@ -82,6 +83,8 @@ fn search(entry: String, is_fuzzy: bool) -> Json<Vec<(String, bool)>> {
             .into_iter()
             .map(|elem| (elem.into_os_string().into_string().unwrap(), true))
             .collect();
+        println!("search: res2({:?})", res2);
+
         Json(res2)
     }
 }
@@ -103,6 +106,8 @@ fn hot_search(entry: String, is_fuzzy: bool, is_regex: bool) -> Json<Vec<(String
         })
         .collect();
 
+    println!("hot_search: res2({:?})", res2);
+
     Json(res2)
 }
 
@@ -117,6 +122,7 @@ fn regex_search(path: String) -> Json<Vec<(String, bool)>> {
         .into_iter()
         .map(|elem| (elem.into_os_string().into_string().unwrap(), true))
         .collect();
+    println!("regex_search: res2({:?})", res2);
     Json(res2)
 }
 

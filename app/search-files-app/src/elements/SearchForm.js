@@ -18,6 +18,7 @@ const SearchForm = () => {
     }, []);
 
     const handleSearch = async () => {
+        setResults([]);
         try {
             let response;
             if (isSmart) {

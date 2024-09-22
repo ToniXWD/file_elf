@@ -22,3 +22,6 @@ walkdir = "2.3"
 
 [build]
 script = "build.rs"
+
+[features]
+webserver = []

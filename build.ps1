@@ -25,7 +25,7 @@ function Ensure-PublishDir {
 # Build the Rust project
 function Build-Elf {
     Write-Host "Building Rust file_elf project..."
-    cargo build --release
+    cargo build --features webserver --release
 }
 
 # Build the Tauri app

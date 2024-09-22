@@ -15,7 +15,7 @@ all: elf tauri
 .PHONY: elf
 elf:
 	@echo "Building Rust file_elf project..."
-	cargo build --release
+	cargo build --features webserver --release
 
 # Build the Tauri app
 .PHONY: tauri

@@ -45,17 +45,16 @@
   "identifier": "com.file.efl.toni",
   "plugins": {
     "cli": {
-      "description": "xxx",
-      "longDescription": "xxx",
-      "beforeHelp": "xxx",
-      "afterHelp": "xxx",
+      "description": "Tauri CLI Plugin",
       "args": [
         {
-          "name": "has-window",
-          "short": "h",
-          "multipleOccurrences": true
+          "name": "split",
+          "short": "s"
         }
       ]
+    },
+    "clipboard-manager": {
+      "allow-write-text": true
     }
   },
   "app": {
