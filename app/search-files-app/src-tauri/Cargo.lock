@@ -140,6 +140,7 @@ dependencies = [
  "tauri",
  "tauri-build",
  "tauri-plugin-cli",
+ "tauri-plugin-global-shortcut",
  "tokio",
 ]
 
@@ -1457,6 +1458,23 @@ name = "glob"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d2fabcfbdc87f4758337ca535fb41a6d701b65693ce38287d856d1674551ec9b"
+
+[[package]]
+name = "global-hotkey"
+version = "0.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d1b75248f33c73df1ed69673f6cb36d2e048ae84d29aa1d3e53199d138ebb1df"
+dependencies = [
+ "crossbeam-channel",
+ "keyboard-types",
+ "objc2",
+ "objc2-app-kit",
+ "once_cell",
+ "serde",
+ "thiserror",
+ "windows-sys 0.59.0",
+ "x11-dl",
+]
 
 [[package]]
 name = "gobject-sys"
@@ -3996,6 +4014,20 @@ version = "2.0.0-rc.1"
 source = "git+https://github.com/tauri-apps/plugins-workspace?branch=v2#221f50f53bd7a87dbd404e4cb1aaf502a5047785"
 dependencies = [
  "clap",
+ "log",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-plugin",
+ "thiserror",
+]
+
+[[package]]
+name = "tauri-plugin-global-shortcut"
+version = "2.0.0-rc.2"
+source = "git+https://github.com/tauri-apps/plugins-workspace?branch=v2#221f50f53bd7a87dbd404e4cb1aaf502a5047785"
+dependencies = [
+ "global-hotkey",
  "log",
  "serde",
  "serde_json",

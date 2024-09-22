@@ -4,9 +4,9 @@
 use std::env;
 use std::path::PathBuf;
 
-#[cfg(target_os = "windows")]
-use tauri_plugin_cli::CliExt;
-use tokio::runtime::Runtime;
+use app::server::launch_file_elf;
+use app::shortcut::register_shorcut;
+use app::tray;
 
 /// 打开文件
 #[tauri::command]
@@ -57,36 +57,25 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_cli::init())
         .setup(|app| {
-            let mut need_launch = true;
-            match app.cli().matches() {
-                Ok(matches) => {
-                    match matches.args.get("split") {
-                        Some(data) => {
-                            if data.value.as_bool().unwrap() {
-                                // file_elf在其他地方启动并启动了webserver
-                                need_launch = false;
-                                println!("no need to launch the file_elf")
-                            }
-                        }
-                        None => {
-                            println!("no need to launch the file_elf");
-                        }
-                    }
-                }
-                Err(_) => {
-                    println!("no need to launch the file_elf");
-                }
+            // 启动后台缓存服务
+            launch_file_elf(app);
+
+            // 注册托盘
+            #[cfg(desktop)]
+            {
+                let handle = app.handle();
+                tray::create_tray(handle)?;
             }
-            if need_launch {
-                let rt = Runtime::new().unwrap();
-                // 在后台线程中执行异步任务
-                std::thread::spawn(move || {
-                    rt.block_on(async {
-                        file_elf::launch_elf().await;
-                    });
-                });
+
+            // 注册快捷键
+            register_shorcut(app)
+        })
+        .on_window_event(|window, event| match event {
+            tauri::WindowEvent::CloseRequested { api, .. } => {
+                api.prevent_close();
+                let _ = window.hide();
             }
-            Ok(())
+            _ => {}
         })
         .invoke_handler(tauri::generate_handler![open_file, open_dir])
         .run(tauri::generate_context!())
