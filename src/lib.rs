@@ -4,6 +4,7 @@ use backend::{file_checker, writer::SENDER};
 use cache::cache::init_trie;
 use config::CONF;
 use db::DB;
+use logger::setup_logger;
 
 // file_elf
 pub mod backend;
@@ -11,11 +12,14 @@ pub mod cache;
 pub mod config;
 pub mod db;
 pub mod util;
+pub mod logger;
 
 #[cfg(feature = "webserver")]
 pub mod server;
 
 pub async fn launch_elf() {
+    let _ = setup_logger();
+
     init_trie(DB.clone());
 
     let mut handlers = Vec::new();

@@ -16,7 +16,10 @@ rocket = { version = "0.5.1", features = ["json"] }
 strsim = "0.11.1"
 regex = "1"
 walkdir = "2.3"
-
+log = "0.4"
+fern = "0.6"
+humantime = "2.1"
+chrono="0.4"
 
 [build-dependencies]
 

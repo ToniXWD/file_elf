@@ -1,4 +1,5 @@
 use lazy_static::lazy_static;
+use log::{debug, error};
 use std::path::PathBuf;
 use std::{collections::BinaryHeap, sync::RwLock};
 use walkdir::WalkDir;
@@ -20,7 +21,7 @@ pub fn push_hot_dir(meta: EntryMeta) {
             }
         }
         Err(e) => {
-            eprintln!("lock HOTDIR failed: {}", e);
+            error!("lock HOTDIR failed: {}", e);
         }
     }
 }
@@ -62,7 +63,7 @@ pub fn search_files_from_hot_dirs(entry: &str, is_fuzzy: bool, is_regex: bool) -
             });
         }
         Err(e) => {
-            eprintln!("lock HOTDIR failed: {}", e);
+            error!("lock HOTDIR failed: {}", e);
         }
     }
 
@@ -85,7 +86,7 @@ pub fn search_target_from_dir(
         // 只在热点文件夹中查询1次
         match entry {
             Ok(dir_entry) => {
-                println!("searching path: {:#?}", dir_entry.path());
+                debug!("searching path: {:#?}", dir_entry.path());
                 let file_name = dir_entry.file_name().to_str().unwrap();
                 if is_excluded(&dir_entry.path().to_path_buf()) {
                     continue;
@@ -104,7 +105,7 @@ pub fn search_target_from_dir(
                 }
             }
             Err(e) => {
-                eprintln!("Error: {}", e);
+                error!("Error: {}", e);
             }
         }
     }

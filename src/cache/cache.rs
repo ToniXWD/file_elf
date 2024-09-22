@@ -4,6 +4,8 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use log::{debug, error};
+
 use crate::{
     config::CONF,
     db::{
@@ -37,7 +39,7 @@ pub fn init_trie(db: Arc<Mutex<dyn Database>>) {
         let path = meta.path.clone();
         // 判断是不是 不存在的文件 or 处于黑名单中的文件
         if is_excluded(&path) {
-            println!(
+            debug!(
                 "path not exists or in blacklist: {:#?}, marked as deleted",
                 &path
             );
@@ -60,11 +62,11 @@ pub fn init_trie(db: Arc<Mutex<dyn Database>>) {
         match trie.insert(paths, Some(meta), false) {
             Ok(meta) => {
                 if meta.is_some() {
-                    println!("init trie: entry({}), meta({:?})", entry, meta.unwrap());
+                    debug!("init trie: entry({}), meta({:?})", entry, meta.unwrap());
                 }
             }
             Err(e) => {
-                println!("init trie error: {}", e);
+                error!("init trie error: {}", e);
             }
         }
     }
@@ -76,10 +78,10 @@ pub fn init_trie(db: Arc<Mutex<dyn Database>>) {
         .into_iter()
         .for_each(|path| match db_guard.delete_by_path(&path) {
             Ok(_) => {
-                println!("delete path in DB: {:?}", path);
+                debug!("delete path in DB: {:?}", path);
             }
             Err(e) => {
-                println!("delete path error: {}", e);
+                debug!("delete path error: {}", e);
             }
         });
     drop(db_guard); // 任何时刻只持有一把锁来避免死锁
@@ -91,7 +93,7 @@ pub fn init_trie(db: Arc<Mutex<dyn Database>>) {
             });
         }
         Err(e) => {
-            eprintln!("lock HOTDIR failed: {}", e);
+            error!("lock HOTDIR failed: {}", e);
         }
     }
 }

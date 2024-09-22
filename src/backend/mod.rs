@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use std::sync::mpsc::Sender;
 use std::{sync::mpsc, time::Duration};
 
+use log::{debug, error, info, trace};
 use notify::{DebouncedEvent, RecommendedWatcher, RecursiveMode, Watcher};
 use writer::DbAction;
 
@@ -12,7 +13,7 @@ use crate::config::CONF;
 use crate::db::DB;
 
 use crate::cache::CACHER;
-use crate::util::is_blacklisted; // 导入缓存模块
+use crate::util::is_blacklisted;
 
 pub fn file_checker(target: &str, db_sender: mpsc::Sender<DbAction>) {
     let (tx, rx) = mpsc::channel();
@@ -23,74 +24,87 @@ pub fn file_checker(target: &str, db_sender: mpsc::Sender<DbAction>) {
         .watch(target, RecursiveMode::Recursive)
         .expect("Failed to watch directory");
 
-    println!("Watching directory for changes...");
+    info!("Watching directory for changes...");
 
     loop {
         match rx.recv() {
             Ok(event) => match event {
                 DebouncedEvent::Create(path) | DebouncedEvent::Write(path) => {
+                    if is_blacklisted(&path) {
+                        trace!("File: {:#?} is blacklisted, ignoring...", path);
+                        continue;
+                    }
                     new_event_handler(&path, &db_sender);
                 }
                 DebouncedEvent::Remove(path) => {
+                    if is_blacklisted(&path) {
+                        trace!("File: {:#?} is blacklisted, ignoring...", path);
+                        continue;
+                    }
                     del_event_handler(&path, &db_sender);
                 }
                 DebouncedEvent::Rename(old_path, new_path) => {
-                    println!("File renamed from {:?} to {:?}", old_path, new_path);
+                    if is_blacklisted(&old_path) {
+                        trace!("File: {:#?} is blacklisted, ignoring...", old_path);
+                        continue;
+                    }
+                    info!("File renamed from {:?} to {:?}", old_path, new_path);
                     del_event_handler(&old_path, &db_sender);
                     new_event_handler(&new_path, &db_sender);
                 }
                 DebouncedEvent::NoticeWrite(path) => {
-                    let db_guard = DB.lock().unwrap();
-                    let db_path = db_guard.get_db_path().clone();
-                    drop(db_guard);
-                    if path.eq(&db_path) {
-                        println!("Database file changed, ignoring...");
+                    if is_blacklisted(&path) {
+                        trace!("File: {:#?} is blacklisted, ignoring...", path);
                         continue;
                     }
-                    println!("File notice write: {:?}", path);
+                    info!("File notice write: {:?}", path);
                 }
                 DebouncedEvent::NoticeRemove(path) => {
-                    println!("File notice remove: {:?}", path);
+                    if is_blacklisted(&path) {
+                        trace!("File: {:#?} is blacklisted, ignoring...", path);
+                        continue;
+                    }
+                    info!("File notice remove: {:?}", path);
                 }
                 DebouncedEvent::Chmod(path) => {
-                    println!("File permissions changed: {:?}", path);
+                    if is_blacklisted(&path) {
+                        trace!("File: {:#?} is blacklisted, ignoring...", path);
+                        continue;
+                    }
+                    info!("File permissions changed: {:?}", path);
                 }
                 DebouncedEvent::Rescan => {
-                    println!("Directory rescan occurred.");
+                    info!("Directory rescan occurred.");
                 }
-                DebouncedEvent::Error(_, err) => {
-                    println!("An error occurred: {:?}", err);
+                DebouncedEvent::Error(err, path) => {
+                    error!("An error occurred: {:?}, related path {:#?}", err, path);
                 }
             },
-            Err(e) => eprintln!("watch error: {:?}", e),
+            Err(e) => error!("watch error: {:?}", e),
         }
     }
 }
 
 pub fn new_event_handler(path: &PathBuf, db_sender: &Sender<DbAction>) {
+    if path.eq(&CONF.database.path) {
+        debug!("Database file changed, ignoring...");
+        return;
+    }
+
     let mut cacher_guard = match CACHER.lock() {
         Ok(guard) => guard,
         Err(e) => panic!("lock cache error: {}", e),
     };
 
-    if path.eq(&CONF.database.path) {
-        println!("Database file changed, ignoring...");
-        return;
-    }
-
-    if is_blacklisted(path) {
-        println!("File: {:#?} is blacklisted, ignoring...", path);
-        return;
-    }
     // 判断path是文件夹还是文件
-    println!("new_event_handler: File created or wirte: {:?}", path);
+    info!("new_event_handler: File created or wirte: {:?}", path);
 
     if let Some(meta) = cacher_guard.search_path(&path, true) {
         // 缓存中存在, 更新数据库
         match db_sender.send(DbAction::UPDATE(path.clone(), meta)) {
             Ok(_) => {}
             Err(e) => {
-                eprintln!("send update DbAction error: {}", e);
+                error!("send update DbAction error: {}", e);
             }
         }
     } else {
@@ -113,7 +127,7 @@ pub fn new_event_handler(path: &PathBuf, db_sender: &Sender<DbAction>) {
                 }
             }
             Err(e) => {
-                eprintln!("lock db error: {}", e);
+                error!("lock db error: {}", e);
             }
         }
 
@@ -127,7 +141,7 @@ pub fn new_event_handler(path: &PathBuf, db_sender: &Sender<DbAction>) {
                 update_data = meta;
             }
             Err(e) => {
-                eprintln!("add path error: {}", e);
+                error!("add path error: {}", e);
             }
         }
 
@@ -138,7 +152,7 @@ pub fn new_event_handler(path: &PathBuf, db_sender: &Sender<DbAction>) {
             match db_sender.send(DbAction::CREATE(path.clone(), update_data.unwrap())) {
                 Ok(_) => {}
                 Err(e) => {
-                    eprintln!("send create DbAction error: {}", e)
+                    error!("send create DbAction error: {}", e)
                 }
             }
         }
@@ -147,18 +161,12 @@ pub fn new_event_handler(path: &PathBuf, db_sender: &Sender<DbAction>) {
 
 #[allow(unused)]
 fn del_event_handler(path: &PathBuf, db_sender: &Sender<DbAction>) {
-    // TODO: 后续需要支持在配置文件里面设置黑名单
     if path.eq(&CONF.database.path) {
-        println!("Database file changed, ignoring...");
+        debug!("Database file changed, ignoring...");
         return;
     }
 
-    if is_blacklisted(path) {
-        println!("File: {:#?} is blacklisted, ignoring...", path);
-        return;
-    }
-
-    println!("del_event_handler: File removed: {:?}", path);
+    info!("del_event_handler: File removed: {:?}", path);
 
     let mut cacher_guard = CACHER.lock().unwrap();
 
@@ -169,9 +177,9 @@ fn del_event_handler(path: &PathBuf, db_sender: &Sender<DbAction>) {
     match db_sender.send(DbAction::DELETE(path.clone())) {
         Ok(_) => {}
         Err(e) => {
-            eprintln!("send del DbAction error: {}", e);
+            error!("send del DbAction error: {}", e);
         }
     }
 
-    println!("del_event_handler: send del: {:#?} DbAction success", &path)
+    debug!("del_event_handler: send del: {:#?} DbAction success", &path)
 }

@@ -1,5 +1,7 @@
 use std::{collections::HashMap, path::PathBuf};
 
+use log::trace;
+
 use crate::db::meta::EntryMeta;
 
 use crate::util::errors::CustomError;
@@ -193,7 +195,7 @@ impl TrieNode {
                 // 不一定将访问计数自增, 在初始化的时候从数据库构建trie时就不需要自增访问计数
                 cur_node.meta.access_count += 1; // 访问计数加1
             }
-            println!("{:?}", &cur_node.meta);
+            trace!("{:?}", &cur_node.meta);
         }
 
         Ok(Some(cur_node.meta.clone()))

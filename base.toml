@@ -26,10 +26,11 @@ blacklist = [
 
 
     # ******************* 自定义黑名单 ********************
-    "F:/CSLearn\\\\proj\\\\file_elf\\\\publish",
+    ".*file_elf.*", # 滤除工具本身
 
 ] # 黑名单列表，支持使用正则表达式
 hotdirnum = 100
+log_level = "info" # 日志级别
 # 注意, windows中使用\\表示分隔符, \需要\\转义, 因此正则表达式中的分隔符为\\\\
 
 
@@ -38,5 +39,6 @@ hotdirnum = 100
 # dbtype = "sqlite" # 数据库类型
 # path = "/home/toni/proj/file_elf/sqlite3.db" # 数据库文件路径
 # targets = ["/home/toni/Course", "/home/toni/proj"] # 监控目录
-# blacklist = [".*/build/.*", ".*/target/.*"] # 黑名单列表，支持使用正则表达式
+# blacklist = [".*/build/.*", ".*/target/.*", ".*file_elf.*"] # 黑名单列表，支持使用正则表达式
 # hotdirnum = 100
+# log_level = "info" # 日志级别

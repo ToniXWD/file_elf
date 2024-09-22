@@ -24,6 +24,7 @@ pub struct DatabaseConfig {
     pub targets: Vec<String>,
     pub blacklist: Vec<String>, // 黑名单字段
     pub hotdirnum: usize,
+    pub log_level: String,
 }
 
 pub fn load_config(path: &str) -> Result<Config, CustomError> {

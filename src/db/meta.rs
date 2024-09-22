@@ -135,8 +135,13 @@ impl EntryMeta {
 
 #[cfg(test)]
 mod tests {
+    use log::debug;
+
     use super::*;
-    use std::{collections::BinaryHeap, time::{Duration, SystemTime}};
+    use std::{
+        collections::BinaryHeap,
+        time::{Duration, SystemTime},
+    };
 
     #[test]
     fn test_entry_meta_ordering() {
@@ -291,10 +296,10 @@ mod tests {
         heap.push(entry_dir2.clone());
 
         // 按照优先队列的顺序弹出并验证比较规则
-        println!("Pop from BinaryHeap (highest priority first):");
+        debug!("Pop from BinaryHeap (highest priority first):");
 
         while let Some(entry) = heap.pop() {
-            println!(
+            debug!(
                 "{:?} - Access Count: {}, Type: {:?}",
                 entry.path, entry.access_count, entry.entry_type
             );

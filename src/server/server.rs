@@ -1,5 +1,4 @@
-use std::path::PathBuf;
-
+use log::{debug, error};
 use rocket::{
     get,
     http::{Method, Status},
@@ -7,6 +6,7 @@ use rocket::{
     serde::json::Json,
     tokio::{signal, spawn},
 };
+use std::path::PathBuf;
 
 use crate::{
     backend::{
@@ -55,7 +55,7 @@ impl Fairing for CORS {
 
 #[get("/search?<entry>&<is_fuzzy>")]
 fn search(entry: String, is_fuzzy: bool) -> Json<Vec<(String, bool)>> {
-    println!("search: entry({}), is_fuzzy({})", entry, is_fuzzy);
+    debug!("search: entry({}), is_fuzzy({})", entry, is_fuzzy);
     let guard = CACHER.lock().unwrap(); // 使用 mut 解锁后可以释放锁
     let res = guard.search_entry(&entry, is_fuzzy);
 
@@ -63,18 +63,18 @@ fn search(entry: String, is_fuzzy: bool) -> Json<Vec<(String, bool)>> {
 
     if res.is_empty() {
         // 缓存没有查到, 从数据库中尽显查询(数据库查询暂不支持模糊查询)
-        println!("cache not found, DB search: entry({})", entry);
+        debug!("cache not found, DB search: entry({})", entry);
         match DB.lock().unwrap().find_by_entry(&entry) {
             Ok(recs) => {
                 let res2 = recs
                     .into_iter()
                     .map(|elem| (elem.path.to_string_lossy().to_string(), true))
                     .collect();
-                println!("search: res2({:?})", res2);
+                debug!("search: res2({:?})", res2);
                 Json(res2)
             }
             Err(e) => {
-                println!("DB error: {}", e);
+                error!("DB error: {}", e);
                 Json(Vec::new())
             }
         }
@@ -83,7 +83,7 @@ fn search(entry: String, is_fuzzy: bool) -> Json<Vec<(String, bool)>> {
             .into_iter()
             .map(|elem| (elem.into_os_string().into_string().unwrap(), true))
             .collect();
-        println!("search: res2({:?})", res2);
+        debug!("search: res2({:?})", res2);
 
         Json(res2)
     }
@@ -106,14 +106,14 @@ fn hot_search(entry: String, is_fuzzy: bool, is_regex: bool) -> Json<Vec<(String
         })
         .collect();
 
-    println!("hot_search: res2({:?})", res2);
+    debug!("hot_search: res2({:?})", res2);
 
     Json(res2)
 }
 
 #[get("/regex_search?<path>")]
 fn regex_search(path: String) -> Json<Vec<(String, bool)>> {
-    println!("regex_search: entry({})", path);
+    debug!("regex_search: entry({})", path);
 
     let guard = CACHER.lock().unwrap(); // 使用 mut 解锁后可以释放锁
     let res = guard.search_path_regex(&path);
@@ -122,7 +122,7 @@ fn regex_search(path: String) -> Json<Vec<(String, bool)>> {
         .into_iter()
         .map(|elem| (elem.into_os_string().into_string().unwrap(), true))
         .collect();
-    println!("regex_search: res2({:?})", res2);
+    debug!("regex_search: res2({:?})", res2);
     Json(res2)
 }
 
@@ -134,13 +134,13 @@ fn star_path(path_data: String) -> Json<bool> {
     // 先插入缓存
     let mut guard = CACHER.lock().unwrap();
     _ = guard.add_path(&r_path, None, false);
-    println!("star_path: {:#?} insert to cache success", r_path);
+    debug!("star_path: {:#?} insert to cache success", r_path);
     drop(guard);
 
     // 再插入数据库
     let sender = SENDER.clone();
     new_event_handler(&r_path, &sender);
-    println!("star_path: {:#?} insert to db success", r_path);
+    debug!("star_path: {:#?} insert to db success", r_path);
 
     Json(true)
 }
@@ -181,9 +181,9 @@ pub async fn init_route() {
     // 启动 Rocket 服务器并处理错误
     let _rocket_handler = spawn(async move {
         if let Err(e) = rocket_instance.launch().await {
-            eprintln!("Failed to launch Rocket: {}", e);
+            error!("Failed to launch Rocket: {}", e);
         } else {
-            println!("Rocket is running and listening for requests.");
+            debug!("Rocket is running and listening for requests.");
         }
     });
 
@@ -191,7 +191,7 @@ pub async fn init_route() {
     signal::ctrl_c()
         .await
         .expect("Failed to listen for ctrl_c signal");
-    println!("Received Ctrl+C, shutting down...");
+    debug!("Received Ctrl+C, shutting down...");
     // _rocket_handler.abort();
     // 强制退出整个进程
     std::process::exit(1);

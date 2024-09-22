@@ -1,6 +1,7 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use super::*;
+use log::trace;
 use meta::EntryMeta;
 use rusqlite::{params, Connection, Row};
 
@@ -154,7 +155,7 @@ impl Database for SqliteDatabase {
 
     /// 按path删除记录
     fn delete_by_path(&self, entry: &PathBuf) -> Result<(), CustomError> {
-        println!("delete_by_path: {}", entry.to_string_lossy());
+        trace!("delete_by_path: {}", entry.to_string_lossy());
         self.conn.execute(
             "DELETE FROM access_records WHERE path = ?1",
             params![entry.to_string_lossy()],
@@ -165,7 +166,7 @@ impl Database for SqliteDatabase {
     /// 按path前缀匹配删除记录
     fn delete_by_path_prefix(&self, path: &PathBuf) -> Result<(), CustomError> {
         let path_with_wildcard = format!("{}%", path.to_string_lossy());
-        println!("delete_by_path_prefix: {}", path_with_wildcard);
+        trace!("delete_by_path_prefix: {}", path_with_wildcard);
         self.conn.execute(
             "DELETE FROM access_records WHERE path LIKE ?1",
             params![path_with_wildcard],
