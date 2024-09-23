@@ -13,8 +13,6 @@ pub mod config;
 pub mod db;
 pub mod util;
 pub mod logger;
-
-#[cfg(feature = "webserver")]
 pub mod server;
 
 pub async fn launch_elf() {

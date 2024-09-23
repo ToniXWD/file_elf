@@ -2,7 +2,7 @@
 [database]
 dbtype = "sqlite"
 path = "sqlite3.db"
-targets = ["D:\\", "E:\\", "F:\\CSLearn", "C:\\Users\\toni\\OneDrive"]
+targets = ["D:\\"] # 指定监听的文件路径前缀, C盘数据读写频繁, 建议不要直接监听C的根目录
 blacklist = [
     # ******************* 开发黑名单 ********************
     ".*build.*",

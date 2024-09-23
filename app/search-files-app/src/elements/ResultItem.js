@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Button, ListGroup } from 'react-bootstrap';
-import axios from 'axios';
 
 
 const ResultItem = ({ result, addMessage }) => {
@@ -31,13 +30,14 @@ const ResultItem = ({ result, addMessage }) => {
 
 
     const toggleFavorite = async (path, isFavorited) => {
+        const invoke = window.__TAURI__.core.invoke;
         try {
-            const url = isFavorited
-                ? 'http://127.0.0.1:6789/file_elf/unstar_path'
-                : 'http://127.0.0.1:6789/file_elf/star_path';
-            const response = await axios.get(url, { params: { path_data: path } });
+            const api_name = isFavorited
+                ? 'unstar_path'
+                : 'star_path';
+            const response = await invoke(api_name, { path });
 
-            if (response.data) {
+            if (response) {
                 console.log(`${isFavorited ? 'Unstarred' : 'Starred'} successfully`);
                 setFavorited(!isFavorited);
             } else {

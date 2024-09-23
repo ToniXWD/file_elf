@@ -17,8 +17,6 @@ pub fn setup_logger() -> Result<(), fern::InitError> {
         _ => log_level = log::LevelFilter::Info, // 其余情况都使用info
     }
 
-    info!("config log_level: {}", CONF.database.log_level);
-
     let log_path = Path::new("file_elf.log");
     if let Some(file_size) = check_file_size(log_path) {
         if file_size >= 10 * 1024 * 1024 {
@@ -49,6 +47,9 @@ pub fn setup_logger() -> Result<(), fern::InitError> {
         .chain(std::io::stdout())
         .chain(fern::log_file(log_path)?)
         .apply()?;
+
+    info!("config log_level: {}", CONF.database.log_level);
+
     Ok(())
 }
 

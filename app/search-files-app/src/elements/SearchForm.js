@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Button, Container, Row, Col } from 'react-bootstrap';
-import axios from 'axios';
 import ResultsList from './ResultsList.js';
 import NotificationToast from './NotificationToast.js';
+import HelpBar from './Help.js';
 
 const SearchForm = () => {
     const [entry, setEntry] = useState('');
     const [isFuzzy, setIsFuzzy] = useState(false);
-    const [isRegex, setIsRegex] = useState(false);
+    const [isRegex, setIsRegex] = useState(true); // 默认开启正则
     const [isSmart, setIsSmart] = useState(false);
     const [results, setResults] = useState([]);
     const [message, setMessage] = useState('');
@@ -19,24 +19,20 @@ const SearchForm = () => {
 
     const handleSearch = async () => {
         setResults([]);
+        const invoke = window.__TAURI__.core.invoke;
+
         try {
             let response;
             if (isSmart) {
-                response = await axios.get('http://127.0.0.1:6789/file_elf/hot_search', {
-                    params: { entry, is_fuzzy: isFuzzy, is_regex: isRegex }
-                });
+                response = await invoke('hot_search', { entry, isFuzzy, isRegex });
             } else if (isRegex) {
-                response = await axios.get('http://127.0.0.1:6789/file_elf/regex_search', {
-                    params: { path: entry }
-                });
+                response = await invoke('regex_search', { entry });
             } else {
-                response = await axios.get('http://127.0.0.1:6789/file_elf/search', {
-                    params: { entry, is_fuzzy: isFuzzy }
-                });
+                response = await invoke('search', { entry, isFuzzy });
             }
 
-            if (response.data && Array.isArray(response.data)) {
-                setResults(response.data);
+            if (response && Array.isArray(response)) {
+                setResults(response);
                 addMessage('Search completed successfully.');
             } else {
                 throw new Error('Invalid response data');
@@ -47,6 +43,7 @@ const SearchForm = () => {
         }
     };
 
+
     const addMessage = (msg) => {
         setMessage(msg);
         setShowToast(true);
@@ -54,13 +51,15 @@ const SearchForm = () => {
     };
 
     return (
-        <Container className="mt-5 text-start">
+        <Container className="mt-2 text-start">
+            <Col md={6} className="text-start">
+            </Col>
+            <br></br>
             <Row className="justify-content-center">
                 <Col md={6}>
                     <h1 className="text-start mb-4">Search Files</h1>
                     <Form>
                         <Form.Group controlId="entry">
-                            <Form.Label>Search Entry:</Form.Label>
                             <Form.Control
                                 type="text"
                                 value={entry}
@@ -69,28 +68,28 @@ const SearchForm = () => {
                             />
                         </Form.Group>
                         <br />
-                        <Form.Check
-                            type="checkbox"
-                            label="Is Fuzzy?"
-                            checked={isFuzzy}
-                            onChange={(e) => setIsFuzzy(e.target.checked)}
-                        />
-                        <br />
-                        <Form.Check
-                            type="checkbox"
-                            label="Is Regex?"
-                            checked={isRegex}
-                            onChange={(e) => setIsRegex(e.target.checked)}
-                        />
-                        <br />
-                        <Form.Check
-                            type="checkbox"
-                            label="Smart Mode?"
-                            checked={isSmart}
-                            onChange={(e) => setIsSmart(e.target.checked)}
-                        />
-                        <br />
-                        <Button variant="primary" onClick={handleSearch}>Search</Button>
+                        <div className="d-flex align-items-center gap-3">
+                            <Form.Check
+                                type="checkbox"
+                                label="Is Fuzzy?"
+                                checked={isFuzzy}
+                                onChange={(e) => setIsFuzzy(e.target.checked)}
+                            />
+                            <Form.Check
+                                type="checkbox"
+                                label="Is Regex?"
+                                checked={isRegex}
+                                onChange={(e) => setIsRegex(e.target.checked)}
+                            />
+                            <Form.Check
+                                type="checkbox"
+                                label="Smart Mode?"
+                                checked={isSmart}
+                                onChange={(e) => setIsSmart(e.target.checked)}
+                            />
+                            <HelpBar></HelpBar>
+                            <Button variant="primary" className="ms-auto" onClick={handleSearch}>Search</Button>
+                        </div>
                     </Form>
                     <ResultsList results={results} addMessage={addMessage} />
                 </Col>

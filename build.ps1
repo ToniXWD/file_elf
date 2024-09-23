@@ -12,6 +12,8 @@ $TAURI_APP_DIR = "./app/search-files-app"
 $TAURI_TARGET_DIR = "$TAURI_APP_DIR/src-tauri/target/release"
 $RUST_BINARY = "file_elf.exe"
 $TAURI_BINARY = "search-files-app.exe"
+$TAURI_INSTALL_MSI = "bundle/msi/search-files-app_0.11.0_x64_en-US.msi"
+$TAURI_INSTALL_EXE = "bundle/nsis/search-files-app_0.11.0_x64-setup.exe"
 $ZIP_FILE = "release_package_windows.zip"
 
 # Ensure the publish directory exists
@@ -42,6 +44,8 @@ function Publish-Files {
     Write-Host "Copying files to the publish directory..."
     Copy-Item "$CARGO_TARGET_DIR/$RUST_BINARY" "$PUBLISH_DIR/"
     Copy-Item "$TAURI_TARGET_DIR/$TAURI_BINARY" "$PUBLISH_DIR/"
+    Copy-Item "$TAURI_TARGET_DIR/$TAURI_INSTALL_MSI" "$PUBLISH_DIR/"
+    Copy-Item "$TAURI_TARGET_DIR/$TAURI_INSTALL_EXE" "$PUBLISH_DIR/"
 }
 
 # Package the build artifacts into a zip file
@@ -81,12 +85,15 @@ function Clean-Elf {
 # Main logic for the build script
 if ($Clean) {
     Clean-Build
-} elseif ($Build) {
+}
+elseif ($Build) {
     Build-Elf
     Build-Tauri
-} elseif ($Publish) {
+}
+elseif ($Publish) {
     Publish-Files
     Package-Files
-} else {
+}
+else {
     Write-Host "Usage: ./build.ps1 -Clean | -Build | -Publish"
 }

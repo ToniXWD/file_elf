@@ -31,7 +31,10 @@
       "providerShortName": null,
       "signingIdentity": null
     },
-    "resources": [],
+    "resources": [
+      "sqlite3.dll",
+      "base.toml"
+    ],
     "shortDescription": "",
     "linux": {
       "deb": {
@@ -41,7 +44,7 @@
   },
   "productName": "search-files-app",
   "mainBinaryName": "search-files-app",
-  "version": "0.1.0",
+  "version": "0.11.0",
   "identifier": "com.file.efl.toni",
   "plugins": {
     "cli": {

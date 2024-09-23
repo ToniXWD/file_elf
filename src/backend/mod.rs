@@ -24,7 +24,7 @@ pub fn file_checker(target: &str, db_sender: mpsc::Sender<DbAction>) {
         .watch(target, RecursiveMode::Recursive)
         .expect("Failed to watch directory");
 
-    info!("Watching directory for changes...");
+    info!("Watching directory: {} for changes...", target);
 
     loop {
         match rx.recv() {

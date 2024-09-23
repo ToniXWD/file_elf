@@ -8,6 +8,43 @@ use app::server::launch_file_elf;
 use app::shortcut::register_shorcut;
 use app::tray;
 
+use file_elf::server::api;
+
+/// 热点文件搜索
+#[tauri::command]
+fn hot_search(entry: String, is_fuzzy: bool, is_regex: bool) -> Vec<(String, bool)> {
+    let res = api::api_hot_search(entry, is_fuzzy, is_regex);
+    res
+}
+
+/// 正则表达式搜索
+#[tauri::command]
+fn regex_search(entry: String) -> Vec<(String, bool)> {
+    let res = api::api_regex_search(entry);
+    res
+}
+
+/// 常规搜索
+#[tauri::command]
+fn search(entry: String, is_fuzzy: bool) -> Vec<(String, bool)> {
+    let res = api::api_search(entry, is_fuzzy);
+    res
+}
+
+/// star_path
+#[tauri::command]
+fn star_path(path: String) -> bool {
+    let res = api::api_star_path(path);
+    res
+}
+
+/// unstar_path
+#[tauri::command]
+fn unstar_path(path: String) -> bool {
+    let res = api::api_unstar_path(path);
+    res
+}
+
 /// 打开文件
 #[tauri::command]
 fn open_file(name: String) {
@@ -68,7 +105,11 @@ fn main() {
             }
 
             // 注册快捷键
-            register_shorcut(app)
+            match register_shorcut(app) {
+                Ok(_) => println!("register shortcut success"),
+                Err(e) => println!("register shortcut error: {}", e),
+            }
+            Ok(())
         })
         .on_window_event(|window, event| match event {
             tauri::WindowEvent::CloseRequested { api, .. } => {
@@ -77,7 +118,15 @@ fn main() {
             }
             _ => {}
         })
-        .invoke_handler(tauri::generate_handler![open_file, open_dir])
+        .invoke_handler(tauri::generate_handler![
+            open_file,
+            open_dir,
+            hot_search,
+            regex_search,
+            search,
+            star_path,
+            unstar_path
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
