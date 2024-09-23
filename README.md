@@ -81,7 +81,7 @@ log_level = "info" # 日志级别
 ### 环境依赖
 - 后端使用[`Rust`](https://www.rust-lang.org/learn/get-started)开发, 要求版本1.81及以上
 - 客户端使用[`tauri`](https://tauri.app/)和[`react`](https://react.dev/)开发
-- 数据库使用`sqlite3`存储
+- 数据库使用`sqlite3`存储, 如果本地已经安装了`sqlite3`并添加`dll`或`so`到环境变量, 可以在`tauri.conf.json`的`resources`中删除动态库的资源依赖
 
 ### Windows
 ```powershell
@@ -90,7 +90,9 @@ log_level = "info" # 日志级别
 ```
 在`publish`中可以看到`search-files-app.exe`文件, 双击运行即可, 同时还会生成`search-files-app_0.11.0_x64_en-US.msi`和`search-files-app_0.11.0_x64-setup.exe`安装程序
 
-### Linux
+### Linux or MacOS
+> Linux or MacOS 需要更改`app/search-files-app/src-tauri/tauri.conf.json`中的`resources`中的`sqlite3.dll`为`libsqlite3.so`
+
 ```bash
 make all # 编译客户端和服务端
 make publish # 打包编译产物和配置文件

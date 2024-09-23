@@ -44,7 +44,7 @@
   },
   "productName": "search-files-app",
   "mainBinaryName": "search-files-app",
-  "version": "0.11.0",
+  "version": "0.12.2",
   "identifier": "com.file.efl.toni",
   "plugins": {
     "cli": {

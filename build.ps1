@@ -12,8 +12,8 @@ $TAURI_APP_DIR = "./app/search-files-app"
 $TAURI_TARGET_DIR = "$TAURI_APP_DIR/src-tauri/target/release"
 $RUST_BINARY = "file_elf.exe"
 $TAURI_BINARY = "search-files-app.exe"
-$TAURI_INSTALL_MSI = "bundle/msi/search-files-app_0.11.0_x64_en-US.msi"
-$TAURI_INSTALL_EXE = "bundle/nsis/search-files-app_0.11.0_x64-setup.exe"
+$TAURI_INSTALL_MSI = "bundle/msi/search-files-app_*_x64_en-US.msi"
+$TAURI_INSTALL_EXE = "bundle/nsis/search-files-app_*_x64-setup.exe"
 $ZIP_FILE = "release_package_windows.zip"
 
 # Ensure the publish directory exists
@@ -42,6 +42,7 @@ function Build-Tauri {
 function Publish-Files {
     Ensure-PublishDir
     Write-Host "Copying files to the publish directory..."
+    Copy-Item "base.toml" "$PUBLISH_DIR/"
     Copy-Item "$CARGO_TARGET_DIR/$RUST_BINARY" "$PUBLISH_DIR/"
     Copy-Item "$TAURI_TARGET_DIR/$TAURI_BINARY" "$PUBLISH_DIR/"
     Copy-Item "$TAURI_TARGET_DIR/$TAURI_INSTALL_MSI" "$PUBLISH_DIR/"
