@@ -6,13 +6,52 @@
 `file_elf` 是一款轻量级的文件查询工具，旨在帮助用户快速查找本地计算机上的文件。它支持精确匹配、模糊匹配、正则查找的搜索方式，并提供了复制路径、打开文件/目录的功能。`file_elf`只会对监控到修改的文件进行索引的建立（这是判断常用文件的依据， 也是设计思路），因此不会进行全盘扫描而占用过多的系统资源。
 
 ![example](doc/example.png)
-
 配置文件描述:
 ```toml
+# ************************************ Windwos ************************************
 [database]
-dbtype = "sqlite" # 使用的数据库类型(目前仅支持sqlite3)
-path = "sqlite3.db" # 数据库文件存储位置
-targets = ["D:/", "E:/", "F:/", "G:/", "H:/"] # 监听目标, 可以是具体的文件夹, 而不是单一盘符
+dbtype = "sqlite"
+path = "sqlite3.db"
+targets = ["D:\\", "E:\\", "F:\\CSLearn", "C:\\Users\\toni\\OneDrive"]
+blacklist = [
+    # ******************* 开发黑名单 ********************
+    ".*build.*",
+    ".*target.*",
+    ".*[Cc]ache.*",     # 缓存文件夹
+    ".*\\.git.*",       # git仓库
+    ".*\\.vscode.*",    # VSCode项目配置信息
+    ".*\\.idea.*",      # jetbrain项目配置信息
+    ".*node_modules.*", # node_modules, node的package, 数量太多
+
+    # ******************* 微信黑名单 ********************
+    ".*WeChat Files\\\\.*\\\\Msg.*",                          # 微信的消息记录
+    ".*WeChat Files\\\\.*\\\\config.*",                       # 微信的配置信息
+    ".*WeChat Files\\\\.*\\\\FileStorage\\\\MsgAttach.*",     # 微信文件附属消息
+    ".*WeChat Files\\\\.*\\\\FileStorage\\\\CustomEmotion.*", # 微信的表情
+
+    # ******************* QQ黑名单 ********************
+    ".*QQ files.*\\\\nt_qq.*\\\\nt_db.*",   # QQ本地数据库
+    ".*QQ files.*\\\\nt_qq.*\\\\nt_temp.*", # QQ临时数据
+    ".*QQ files.*\\\\nt_qq.*\\\\nt_data*",  # QQ数据
+
+
+    # ******************* 自定义黑名单 ********************
+    ".*file_elf.*", # 滤除工具本身
+
+] # 黑名单列表，支持使用正则表达式
+hotdirnum = 100
+log_level = "info" # 日志级别
+# 注意, windows中使用\\表示分隔符, \需要\\转义, 因此正则表达式中的分隔符为\\\\
+
+
+# ************************************ Linux or MacOS ************************************
+# [database]
+# dbtype = "sqlite" # 数据库类型
+# path = "/home/toni/proj/file_elf/sqlite3.db" # 数据库文件路径
+# targets = ["/home/toni/Course", "/home/toni/proj"] # 监控目录
+# blacklist = [".*/build/.*", ".*/target/.*", ".*file_elf.*"] # 黑名单列表，支持使用正则表达式
+# hotdirnum = 100
+# log_level = "info" # 日志级别
 ```
 # 功能
 
@@ -23,12 +62,14 @@ targets = ["D:/", "E:/", "F:/", "G:/", "H:/"] # 监听目标, 可以是具体的
 - [x] 支持配置文件添加路径黑名单(正则表达式)
 - [x] 支持模糊搜索和正则匹配
 - [x] 支持热点文件夹查询(`Smart Search`)
-- [x] 支持添加or删除搜索到的记录项
+- [x] 支持搜索结果的动作: 打开文件、打开文件夹、复制路径
+- [x] 支持添加(⭐)or删除(☆)搜索到的记录项
 - [x] 配置文件黑名单和过滤规则
+- [x] 支持本地日志输出和日志过滤级别
+- [x] 重启时检查数据库记录是否有效
 - [ ] 配置文件支持自定义数据库(目前使用`sqlite3`)
 - [ ] 前端后端使用更高效的`IPC`通信, 而不占用本地3000端口
 - [ ] 支持剥离关系型数据库`sqlite`3存储, 创建自定义的文件格式存储
-- [x] 重启时检查数据库记录是否有效
 
 # 安装和开发
 
@@ -47,7 +88,7 @@ targets = ["D:/", "E:/", "F:/", "G:/", "H:/"] # 监听目标, 可以是具体的
 .\build.ps1 -Build # 编译客户端和服务端
 .\build.ps1 -Publish # 打包编译产物和配置文件
 ```
-在`publish`中可以看到`search-files-app.exe`文件, 双击运行即可
+在`publish`中可以看到`search-files-app.exe`文件, 双击运行即可, 同时还会生成`search-files-app_0.11.0_x64_en-US.msi`和`search-files-app_0.11.0_x64-setup.exe`安装程序
 
 ### Linux
 ```bash
