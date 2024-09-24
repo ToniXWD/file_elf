@@ -94,6 +94,7 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_cli::init())
         .setup(|app| {
+
             // 启动后台缓存服务
             launch_file_elf(app);
 
