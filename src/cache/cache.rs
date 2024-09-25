@@ -1,10 +1,7 @@
-use std::{
-    collections::BinaryHeap,
-    path::PathBuf,
-    sync::{Arc, Mutex},
-};
+use std::{collections::BinaryHeap, path::PathBuf, sync::Arc};
 
 use log::{debug, error};
+use tokio::sync::Mutex;
 
 use crate::{
     config::CONF,
@@ -21,13 +18,13 @@ pub struct Cacher {
     pub tree: TrieCache,
 }
 
-pub fn init_trie(db: Arc<Mutex<dyn Database>>) {
-    let db_guard = db.lock().unwrap();
+pub async fn init_trie(db: Arc<Mutex<dyn Database>>) {
+    let db_guard = db.lock().await;
 
     let data = db_guard.find_all();
     drop(db_guard); // 任何时刻只持有一把锁来避免死锁
 
-    let mut cache_guard = CACHER.lock().unwrap();
+    let mut cache_guard = CACHER.lock().await;
     let trie = &mut cache_guard.tree.root;
 
     let mut del_paths = Vec::new();
@@ -72,7 +69,7 @@ pub fn init_trie(db: Arc<Mutex<dyn Database>>) {
     }
     drop(cache_guard); // 任何时刻只持有一把锁来避免死锁
 
-    let db_guard = db.lock().unwrap();
+    let db_guard = db.lock().await;
     // 清理数据库中: 不存在的文件 + 处于黑名单中的文件
     del_paths
         .into_iter()

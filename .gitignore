@@ -2,3 +2,4 @@
 sqlite3.db
 publish/*
 *.log
+*.bak

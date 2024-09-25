@@ -1,8 +1,8 @@
 pub mod cache;
-pub mod trie;
 pub mod hot_dir;
+pub mod trie;
 
-use std::sync::Mutex;
+use tokio::sync::Mutex;
 
 pub use cache::Cacher;
 

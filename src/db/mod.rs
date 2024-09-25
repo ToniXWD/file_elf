@@ -1,19 +1,30 @@
 pub mod meta;
 pub mod sqlite;
 
-use std::{
-    path::PathBuf,
-    sync::{Arc, Mutex},
-};
+use std::{path::PathBuf, sync::Arc};
 
 use lazy_static::lazy_static;
+use log::info;
 pub use meta::EntryMeta;
+use tokio::sync::Mutex;
 
 lazy_static! {
     pub static ref DB: Arc<Mutex<dyn Database>> =
         Arc::new(Mutex::new(match CONF.database.dbtype.as_str() {
             "sqlite" => {
-                SqliteDatabase::new(&CONF.database.path).unwrap()
+                match SqliteDatabase::new(&CONF.database.path) {
+                    Ok(db) => {
+                        info!(
+                            "SqliteDatabase created from {:#?} successfully",
+                            &CONF.database.path
+                        );
+                        db
+                    }
+                    Err(e) => panic!(
+                        "Failed to create SqliteDatabase from path: {:#?}, errorr: {}",
+                        CONF.database.path, e
+                    ),
+                }
             }
             st => {
                 panic!("Unsupported database type: {}", st)
@@ -22,7 +33,7 @@ lazy_static! {
 }
 
 // 定义一个数据库操作的 trait
-pub trait Database: Send {
+pub trait Database: Send + Sync {
     fn get_db_path(&self) -> &PathBuf;
     fn find_all(&self) -> Vec<(String, EntryMeta)>;
     fn create_table(&self) -> Result<(), CustomError>;

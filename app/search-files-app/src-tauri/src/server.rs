@@ -1,8 +1,7 @@
-use tauri::App;
+use tauri::{async_runtime::spawn, App};
 use tauri_plugin_cli::CliExt;
-use tokio::runtime::Runtime;
 
-pub fn launch_file_elf(app: &mut App) {
+pub async fn launch_file_elf(app: &mut App) {
     let mut need_launch = true;
     match app.cli().matches() {
         Ok(matches) => {
@@ -24,12 +23,7 @@ pub fn launch_file_elf(app: &mut App) {
         }
     }
     if need_launch {
-        let rt = Runtime::new().unwrap();
         // 在后台线程中执行异步任务
-        std::thread::spawn(move || {
-            rt.block_on(async {
-                file_elf::launch_elf().await;
-            });
-        });
+        spawn(file_elf::launch_elf());
     }
 }

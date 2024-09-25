@@ -2,16 +2,24 @@
 [database]
 dbtype = "sqlite"
 path = "sqlite3.db"
-targets = ["D:\\", "E:\\", "F:\\CSLearn", "C:\\Users\\toni\\OneDrive"]
+targets = [
+    "C:\\Users\\toni\\OneDrive",
+    "D:\\",
+    "E:\\",
+    "F:\\",
+    "G:\\",
+    "H:\\",
+] # 指定监听的文件路径前缀, C盘数据读写频繁, 建议不要直接监听C的根目录
 blacklist = [
     # ******************* 开发黑名单 ********************
     ".*build.*",
     ".*target.*",
-    ".*[Cc]ache.*",     # 缓存文件夹
-    ".*\\.git.*",       # git仓库
-    ".*\\.vscode.*",    # VSCode项目配置信息
-    ".*\\.idea.*",      # jetbrain项目配置信息
-    ".*node_modules.*", # node_modules, node的package, 数量太多
+    ".*[Cc]ache.*",         # 缓存文件夹
+    ".*\\.git.*",           # git仓库
+    ".*\\.vscode.*",        # VSCode项目配置信息
+    ".*\\.idea.*",          # jetbrain项目配置信息
+    ".*node_modules.*",     # node_modules, node的package, 数量太多
+    ".*\\$RECYCLE\\.BIN.*", # 回收站
 
     # ******************* 微信黑名单 ********************
     ".*WeChat Files\\\\.*\\\\Msg.*",                          # 微信的消息记录

@@ -9,40 +9,41 @@ use app::shortcut::register_shorcut;
 use app::tray;
 
 use file_elf::server::api;
+use tauri::async_runtime::block_on;
 
 /// 热点文件搜索
 #[tauri::command]
-fn hot_search(entry: String, is_fuzzy: bool, is_regex: bool) -> Vec<(String, bool)> {
+async fn hot_search(entry: String, is_fuzzy: bool, is_regex: bool) -> Vec<(String, bool)> {
     let res = api::api_hot_search(entry, is_fuzzy, is_regex);
-    res
+    res.await
 }
 
 /// 正则表达式搜索
 #[tauri::command]
-fn regex_search(entry: String) -> Vec<(String, bool)> {
+async fn regex_search(entry: String) -> Vec<(String, bool)> {
     let res = api::api_regex_search(entry);
-    res
+    res.await
 }
 
 /// 常规搜索
 #[tauri::command]
-fn search(entry: String, is_fuzzy: bool) -> Vec<(String, bool)> {
+async fn search(entry: String, is_fuzzy: bool) -> Vec<(String, bool)> {
     let res = api::api_search(entry, is_fuzzy);
-    res
+    res.await
 }
 
 /// star_path
 #[tauri::command]
-fn star_path(path: String) -> bool {
+async fn star_path(path: String) -> bool {
     let res = api::api_star_path(path);
-    res
+    res.await
 }
 
 /// unstar_path
 #[tauri::command]
-fn unstar_path(path: String) -> bool {
+async fn unstar_path(path: String) -> bool {
     let res = api::api_unstar_path(path);
-    res
+    res.await
 }
 
 /// 打开文件
@@ -95,7 +96,7 @@ fn main() {
         .plugin(tauri_plugin_cli::init())
         .setup(|app| {
             // 启动后台缓存服务
-            launch_file_elf(app);
+            block_on(launch_file_elf(app));
 
             // 注册托盘
             #[cfg(desktop)]
