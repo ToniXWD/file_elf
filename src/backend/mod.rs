@@ -119,9 +119,10 @@ pub fn new_event_handler(path: &PathBuf, db_sender: &Sender<DbAction>) {
 
         match DB.lock() {
             Ok(db_guard) => {
-                if let Ok(meta) = db_guard.find_by_path(&path) {
+                if let Ok(Some(meta)) = db_guard.find_by_path(&path) {
+                    println!("find path {:#?} in db, no need update db", &path);
                     // 数据库查询到后还需要更新到缓存
-                    update_data = meta;
+                    update_data = Some(meta);
                     // 数据库中存在, 不需要更新数据库
                     need_create = false;
                 }
@@ -148,6 +149,7 @@ pub fn new_event_handler(path: &PathBuf, db_sender: &Sender<DbAction>) {
         drop(cacher_guard); // 提前释放cache锁
 
         if need_create {
+            println!("not find path {:#?} in db, need to update db", &path);
             // 如果数据库没有查到数据, 则是新增数据, 需要插入数据库
             match db_sender.send(DbAction::CREATE(path.clone(), update_data.unwrap())) {
                 Ok(_) => {}

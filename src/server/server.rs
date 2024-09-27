@@ -45,29 +45,29 @@ impl Fairing for CORS {
 }
 
 #[get("/search?<entry>&<is_fuzzy>")]
-fn search(entry: String, is_fuzzy: bool) -> Json<Vec<(String, bool)>> {
+async fn search(entry: String, is_fuzzy: bool) -> Json<Vec<(String, bool)>> {
     Json(api_search(entry, is_fuzzy))
 }
 
 #[get("/hot_search?<entry>&<is_fuzzy>&<is_regex>")]
-fn hot_search(entry: String, is_fuzzy: bool, is_regex: bool) -> Json<Vec<(String, bool)>> {
+async fn hot_search(entry: String, is_fuzzy: bool, is_regex: bool) -> Json<Vec<(String, bool)>> {
     Json(api_hot_search(entry, is_fuzzy, is_regex))
 }
 
 #[get("/regex_search?<path>")]
-fn regex_search(path: String) -> Json<Vec<(String, bool)>> {
+async fn regex_search(path: String) -> Json<Vec<(String, bool)>> {
     Json(api_regex_search(path))
 }
 
 // TODO: 为了实现简洁, 更改本地状态的请求也使用了get请求, 后续需要修复并解决Option和CORS问题
 #[get("/star_path?<path_data>")]
-fn star_path(path_data: String) -> Json<bool> {
+async fn star_path(path_data: String) -> Json<bool> {
     Json(api_star_path(path_data))
 }
 
 // TODO: 为了实现简洁, 更改本地状态的请求也使用了get请求, 后续需要修复并解决Option和CORS问题
 #[get("/unstar_path?<path_data>")]
-fn unstar_path(path_data: String) -> Json<bool> {
+async fn unstar_path(path_data: String) -> Json<bool> {
     Json(api_unstar_path(path_data))
 }
 

@@ -11,6 +11,9 @@ pub struct SqliteDatabase {
     db_path: PathBuf,
 }
 
+unsafe impl Send for SqliteDatabase {}
+unsafe impl Sync for SqliteDatabase {}
+
 fn system_to_unix_ts(time: &SystemTime) -> u64 {
     time.duration_since(UNIX_EPOCH)
         .expect("Time went backwards")
@@ -36,15 +39,11 @@ fn row_to_meta(row: &Row<'_>) -> EntryMeta {
 impl SqliteDatabase {
     /// 创建一个新的 `SqliteDatabase` 实例
     pub fn new(database_path: &PathBuf) -> Result<Self, CustomError> {
-        let conn = if std::path::Path::new(database_path).exists() {
-            Connection::open(database_path)?
-        } else {
-            Connection::open(database_path)?
-        };
+        let conn = Connection::open(database_path)?;
 
         let res = SqliteDatabase {
             conn,
-            db_path: PathBuf::from(database_path),
+            db_path: database_path.clone(),
         };
         res.create_table()?;
         Ok(res)
