@@ -38,7 +38,7 @@ blacklist = [
 
 ] # 黑名单列表，支持使用正则表达式
 hotdirnum = 100
-log_level = "info" # 日志级别
+log_level = "trace" # 日志级别
 # 注意, windows中使用\\表示分隔符, \需要\\转义, 因此正则表达式中的分隔符为\\\\
 
 

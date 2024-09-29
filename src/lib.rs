@@ -11,12 +11,14 @@ pub mod backend;
 pub mod cache;
 pub mod config;
 pub mod db;
-pub mod util;
 pub mod logger;
 pub mod server;
+pub mod util;
 
-pub async fn launch_elf() {
-    let _ = setup_logger();
+pub async fn launch_elf(set_logger: bool) {
+    if set_logger {
+        let _ = setup_logger();
+    }
 
     init_trie(DB.clone());
 

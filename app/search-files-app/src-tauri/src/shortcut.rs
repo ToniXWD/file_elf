@@ -1,3 +1,4 @@
+use log::{info, warn};
 use tauri::{App, Manager};
 
 pub fn register_shorcut(app: &mut App) -> std::result::Result<(), Box<dyn std::error::Error>> {
@@ -11,18 +12,18 @@ pub fn register_shorcut(app: &mut App) -> std::result::Result<(), Box<dyn std::e
                 .with_handler(|_app, shortcut, event| {
                     if event.state == ShortcutState::Pressed {
                         if shortcut.matches(Modifiers::CONTROL, Code::F1) {
-                            println!("ctrl+f1 was pressed");
+                            info!("ctrl+f1 was pressed");
                             if let Some(window) = _app.get_webview_window("main") {
                                 if window.is_visible().is_ok() && !window.is_visible().unwrap() {
-                                    println!("try to show the window");
+                                    info!("try to show the window");
                                     let _ = window.show();
                                     let _ = window.set_focus();
                                 } else {
-                                    println!("try to hide the window");
+                                    info!("try to hide the window");
                                     let _ = window.hide();
                                 }
                             } else {
-                                println!("window not found");
+                                warn!("window not found");
                             }
                         }
                     }

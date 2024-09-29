@@ -19,6 +19,13 @@ const ResultItem = ({ result, addMessage }) => {
         addMessage(`Directory opened: ${filePath}`);
     };
 
+    const openVSCode = (filePath) => {
+        const invoke = window.__TAURI__.core.invoke;
+
+        invoke('open_vscode', { path: filePath });
+        addMessage(`Directory opened in vscode: ${filePath}`);
+    };
+
     const copyPathToClipboard = async (path) => {
         try {
             await navigator.clipboard.writeText(path);
@@ -57,6 +64,9 @@ const ResultItem = ({ result, addMessage }) => {
             </Button>
             <Button variant="outline-secondary" size="sm" onClick={() => openFile(result[0])}>
                 📄
+            </Button>
+            <Button variant="outline-secondary" size="sm" onClick={() => openVSCode(result[0])}>
+                <img src="/code.ico" alt="VSCode Icon" style={{ width: '16px', height: '16px' }} />
             </Button>
             <Button variant="outline-secondary" size="sm" onClick={() => copyPathToClipboard(result[0])}>
                 Copy Path

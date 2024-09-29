@@ -70,9 +70,6 @@
         "width": 600
       }
     ],
-    "withGlobalTauri": true,
-    "security": {
-      "csp": null
-    }
+    "withGlobalTauri": true
   }
 }
