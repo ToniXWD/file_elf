@@ -2,11 +2,16 @@ pub mod errors;
 
 use std::path::PathBuf;
 
+use crate::config::CONF;
 use errors::CustomError;
 use regex::Regex;
+use std::ffi::OsString;
 use strsim::levenshtein;
 
-use crate::config::CONF;
+#[cfg(target_os = "windows")]
+use std::os::windows::ffi::OsStringExt;
+#[cfg(target_os = "windows")]
+use winapi::um::fileapi::GetLogicalDriveStringsW;
 
 /// 模糊匹配
 pub fn pattern_match(entry: &str, pattern: &str, is_fuzzy: bool) -> bool {
@@ -66,6 +71,24 @@ pub fn is_blacklisted(file_path: &PathBuf) -> bool {
     false
 }
 
+// 条件编译: Windows
+// 获取当前操作系统的所有盘符
+#[cfg(target_os = "windows")]
+pub fn get_drives() -> Vec<String> {
+    let mut buffer: [u16; 256] = [0; 256];
+    let length = unsafe { GetLogicalDriveStringsW(buffer.len() as u32, buffer.as_mut_ptr()) };
+    if length == 0 {
+        return Vec::new();
+    }
+    let os_string = OsString::from_wide(&buffer[..length as usize]);
+    os_string
+        .to_string_lossy()
+        .split('\u{0}')
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string())
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     #[allow(unused)]
@@ -97,5 +120,11 @@ mod tests {
 
         let res = is_excluded(&path);
         assert!(res);
+    }
+
+    #[test]
+    fn test_drives() {
+        let drives = get_drives();
+        println!("{:?}", drives);
     }
 }

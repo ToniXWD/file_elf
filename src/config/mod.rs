@@ -8,6 +8,9 @@ use toml;
 use crate::util::errors::CustomError;
 use crate::util::to_absolute_path;
 
+#[cfg(target_os = "windows")]
+use crate::util::get_drives;
+
 const CONFNAME: &str = "base.toml";
 
 // 初始化CONF在setup_logger之前, 所以直接用printfln!输出
@@ -55,7 +58,10 @@ impl Default for DatabaseConfig {
         };
         #[cfg(target_os = "windows")]
         {
-            default_config.targets.extend(vec!["C:\\Users".to_string()]);
+            let mut drivers: Vec<String> = get_drives();
+            drivers[0] = "C:\\Users".to_string(); // C盘不监视整个根目录
+            default_config.targets.extend(drivers);
+
             default_config.blacklist.extend(vec![
                 ".*\\.git.*".to_string(),
                 ".*\\.vscode.*".to_string(),
@@ -118,5 +124,19 @@ impl DatabaseConfig {
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::config::{Config, CONF};
+
+    #[test]
+    fn test_show_config() {
+        let config_load = &*CONF;
+        println!("{:#?}", config_load);
+
+        let config_default = Config::default();
+        println!("{:#?}", config_default);
     }
 }

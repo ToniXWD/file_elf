@@ -19,7 +19,10 @@ walkdir = "2.3"
 log = "0.4"
 fern = "0.6"
 humantime = "2.1"
-chrono="0.4"
+chrono = "0.4"
+
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3", features = ["fileapi"] }
 
 [build-dependencies]
 
