@@ -32,3 +32,4 @@ custom-protocol = ["tauri/custom-protocol"]
 tauri-plugin-cli = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v2" }
 tauri-plugin-global-shortcut = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v2" }
 tauri-plugin-log = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v2" }
+tauri-plugin-single-instance = "2.0.0-rc"

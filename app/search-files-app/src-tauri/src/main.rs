@@ -6,7 +6,7 @@ use std::{env, process::Command};
 
 use app::server::launch_file_elf;
 use app::shortcut::register_shorcut;
-use app::tray;
+use app::{show_window, tray};
 
 use file_elf::server::api;
 use log::{error, info, trace, warn};
@@ -124,6 +124,9 @@ fn open_vscode(path: String) {
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            let _ = show_window(app);
+        }))
         .plugin(tauri_plugin_cli::init())
         .plugin(
             tauri_plugin_log::Builder::new()
