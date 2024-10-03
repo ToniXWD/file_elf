@@ -3,6 +3,7 @@ import { Form, Button, Container, Row, Col } from 'react-bootstrap';
 import ResultsList from './ResultsList.js';
 import NotificationToast from './NotificationToast.js';
 import HelpBar from './Help.js';
+import ConfigBar from './Config.js';
 
 const SearchForm = () => {
     const [entry, setEntry] = useState('');
@@ -71,23 +72,25 @@ const SearchForm = () => {
                         <div className="d-flex align-items-center gap-3">
                             <Form.Check
                                 type="checkbox"
-                                label="Is Fuzzy?"
+                                label="Fuzzy"
                                 checked={isFuzzy}
                                 onChange={(e) => setIsFuzzy(e.target.checked)}
                             />
                             <Form.Check
                                 type="checkbox"
-                                label="Is Regex?"
+                                label="Regex"
                                 checked={isRegex}
                                 onChange={(e) => setIsRegex(e.target.checked)}
                             />
                             <Form.Check
                                 type="checkbox"
-                                label="Smart Mode?"
+                                label="Smart Mode"
                                 checked={isSmart}
                                 onChange={(e) => setIsSmart(e.target.checked)}
                             />
                             <HelpBar></HelpBar>
+                            <ConfigBar></ConfigBar
+                            >
                             <Button variant="primary" className="ms-auto" onClick={handleSearch}>Search</Button>
                         </div>
                     </Form>

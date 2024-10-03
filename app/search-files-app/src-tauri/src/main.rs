@@ -10,6 +10,7 @@ use app::{show_window, tray};
 
 use file_elf::server::api;
 use log::{error, info, trace, warn};
+use tauri_plugin_log::TimezoneStrategy;
 
 /// 热点文件搜索
 #[tauri::command]
@@ -130,6 +131,7 @@ fn main() {
         .plugin(tauri_plugin_cli::init())
         .plugin(
             tauri_plugin_log::Builder::new()
+                .timezone_strategy(TimezoneStrategy::UseLocal) // 设置时区
                 .max_file_size(50_000 /* bytes */)
                 .target(tauri_plugin_log::Target::new(
                     tauri_plugin_log::TargetKind::Folder {
