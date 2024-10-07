@@ -13,16 +13,21 @@ use std::os::windows::ffi::OsStringExt;
 #[cfg(target_os = "windows")]
 use winapi::um::fileapi::GetLogicalDriveStringsW;
 
-/// 模糊匹配
+/// 匹配
 pub fn pattern_match(entry: &str, pattern: &str, is_fuzzy: bool) -> bool {
     let entry_l = entry.to_lowercase();
     let pattern_l = pattern.to_lowercase();
+
+    // 只取前缀部分进行匹配
+    let entry_prefix: String = entry_l.chars().take(pattern_l.chars().count()).collect();
+    let pattern_prefix: String = pattern_l.chars().take(entry_l.chars().count()).collect();
+
     if is_fuzzy {
         // 设定一个模糊匹配的阈值，比如距离小于等于2
         let threshold = 2;
-        levenshtein(&entry_l, &pattern_l) <= threshold
+        levenshtein(&entry_prefix, &pattern_prefix) <= threshold
     } else {
-        entry_l == pattern_l
+        entry_prefix == pattern_prefix
     }
 }
 

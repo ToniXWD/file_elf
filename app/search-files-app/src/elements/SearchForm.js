@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Form, Button, Container, Row, Col } from 'react-bootstrap';
+import { Form, Button, Container, Row, Col, Tooltip, OverlayTrigger } from 'react-bootstrap';
 import ResultsList from './ResultsList.js';
 import NotificationToast from './NotificationToast.js';
 import HelpBar from './Help.js';
@@ -26,9 +26,14 @@ const SearchForm = () => {
 
     useEffect(() => {
         setResults([]);
-
         focusInput();
     }, []);
+
+    useEffect(() => {
+        if (entry && !isSmart) {
+            handleSearch();
+        }
+    }, [entry, isFuzzy, isRegex, isSmart]);
 
     const handleSearch = async () => {
         setResults([]);
@@ -56,7 +61,6 @@ const SearchForm = () => {
         }
     };
 
-
     const addMessage = (msg) => {
         setMessage(msg);
         setShowToast(true);
@@ -79,38 +83,39 @@ const SearchForm = () => {
                                 onChange={(e) => setEntry(e.target.value)}
                                 ref={inputRef} // 绑定引用
                                 placeholder="Enter your search query"
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        e.preventDefault(); // 阻止默认行为，避免清空输入框
-                                        console.log('Enter pressed');
-                                        handleSearch();
-                                    }
-                                }}
                             />
                         </Form.Group>
                         <br />
                         <div className="d-flex align-items-center gap-3">
-                            <Form.Check
-                                type="checkbox"
-                                label="Fuzzy"
-                                checked={isFuzzy}
-                                onChange={(e) => setIsFuzzy(e.target.checked)}
-                            />
-                            <Form.Check
-                                type="checkbox"
-                                label="Regex"
-                                checked={isRegex}
-                                onChange={(e) => setIsRegex(e.target.checked)}
-                            />
-                            <Form.Check
-                                type="checkbox"
-                                label="Smart Mode"
-                                checked={isSmart}
-                                onChange={(e) => setIsSmart(e.target.checked)}
-                            />
+                            <OverlayTrigger placement="bottom" overlay={<Tooltip>Fuzzy search enables partial matches.</Tooltip>}>
+                                <Form.Check
+                                    type="checkbox"
+                                    label="Fuzzy"
+                                    checked={isFuzzy}
+                                    onChange={(e) => setIsFuzzy(e.target.checked)}
+                                />
+                            </OverlayTrigger>
+
+                            <OverlayTrigger placement="bottom" overlay={<Tooltip>Regex search enables regex matches and it will add .* in both ends</Tooltip>}>
+                                <Form.Check
+                                    type="checkbox"
+                                    label="Regex"
+                                    checked={isRegex}
+                                    onChange={(e) => setIsRegex(e.target.checked)}
+                                />
+                            </OverlayTrigger>
+
+                            <OverlayTrigger placement="bottom" overlay={<Tooltip>Smart search search entries in hot dirs which are not cached. It costs more resoureces so it will not raise auto search unless you press the button</Tooltip>}>
+                                <Form.Check
+                                    type="checkbox"
+                                    label="Smart Mode"
+                                    checked={isSmart}
+                                    onChange={(e) => setIsSmart(e.target.checked)}
+                                />
+                            </OverlayTrigger>
+
                             <HelpBar></HelpBar>
-                            <ConfigBar></ConfigBar
-                            >
+                            <ConfigBar></ConfigBar>
                             <Button variant="primary" type="button" className="ms-auto"
                                 onClick={handleSearch}>
                                 Search

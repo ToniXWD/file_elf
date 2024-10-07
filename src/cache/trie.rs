@@ -115,7 +115,7 @@ impl TrieNode {
 
         // 如果当前节点的名称与目标名称相匹配，将当前节点的路径加入结果
 
-        if pattern_match(&self.entry_name, entry_name, is_fuzzy) {
+        if !self.entry_name.is_empty() && pattern_match(&self.entry_name, entry_name, is_fuzzy) {
             results.push(self.full_path.clone());
         }
 

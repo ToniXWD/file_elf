@@ -135,8 +135,8 @@ fn main() {
                 .max_file_size(50_000 /* bytes */)
                 .target(tauri_plugin_log::Target::new(
                     tauri_plugin_log::TargetKind::Folder {
-                        path: PathBuf::from("."),
-                        file_name: Some("search_file_app".to_string()),
+                        path: PathBuf::from("./log"),
+                        file_name: Some("./search_file_app".to_string()),
                     },
                 ))
                 .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepAll)
