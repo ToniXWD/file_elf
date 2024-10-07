@@ -4,9 +4,6 @@
 
 ![example](doc/example.png)
 
-
-
-
 # 操作说明
 
 - 搜索模式选项说明
@@ -79,7 +76,7 @@ log_level = "trace" # 日志级别
 # log_level = "info" # 日志级别
 ```
 
-# 功能列表
+# 功能 && TODO
 
 > 最新的功能可能还没有发布到[Release](https://github.com/ToniXWD/file_elf/releases), 需要本地编译
 
@@ -100,6 +97,8 @@ log_level = "trace" # 日志级别
 - [ ] 支持配置文件热重载
 - [ ] 支持剥离关系型数据库 `sqlite3`存储, 创建自定义的文件格式存储
 - [ ] 配置文件支持自定义数据库(目前使用 `sqlite3`)
+- [ ] 搜索项支持系统级别的更多操作(仅 `windows`)
+- [ ] 客户端界面优化: 设定默认聚焦组件 && `table` 切换 && `Enter `默认行为
 
 # 安装和开发
 

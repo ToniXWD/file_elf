@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Form, Button, Container, Row, Col } from 'react-bootstrap';
 import ResultsList from './ResultsList.js';
 import NotificationToast from './NotificationToast.js';
@@ -14,8 +14,20 @@ const SearchForm = () => {
     const [message, setMessage] = useState('');
     const [showToast, setShowToast] = useState(false);
 
+    // 创建输入框的引用
+    const inputRef = useRef(null);
+
+    // 聚焦输入框的函数
+    const focusInput = () => {
+        if (inputRef.current) {
+            inputRef.current.focus();
+        }
+    };
+
     useEffect(() => {
         setResults([]);
+
+        focusInput();
     }, []);
 
     const handleSearch = async () => {
@@ -59,13 +71,21 @@ const SearchForm = () => {
             <Row className="justify-content-center">
                 <Col md={6}>
                     <h1 className="text-start mb-4">Search Files</h1>
-                    <Form>
+                    <Form onSubmit={(e) => e.preventDefault()}>
                         <Form.Group controlId="entry">
                             <Form.Control
                                 type="text"
                                 value={entry}
                                 onChange={(e) => setEntry(e.target.value)}
+                                ref={inputRef} // 绑定引用
                                 placeholder="Enter your search query"
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault(); // 阻止默认行为，避免清空输入框
+                                        console.log('Enter pressed');
+                                        handleSearch();
+                                    }
+                                }}
                             />
                         </Form.Group>
                         <br />
@@ -91,7 +111,10 @@ const SearchForm = () => {
                             <HelpBar></HelpBar>
                             <ConfigBar></ConfigBar
                             >
-                            <Button variant="primary" className="ms-auto" onClick={handleSearch}>Search</Button>
+                            <Button variant="primary" type="button" className="ms-auto"
+                                onClick={handleSearch}>
+                                Search
+                            </Button>
                         </div>
                     </Form>
                     <ResultsList results={results} addMessage={addMessage} />

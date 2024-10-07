@@ -59,6 +59,7 @@ const ResultItem = ({ result, addMessage }) => {
         <ListGroup.Item>
             {/* 解构 result 以提取字符串和布尔值 */}
             {result[0]}{' '}  {/* 这是字符串部分 */}
+            <br></br>
             <Button variant="outline-secondary" size="sm" onClick={() => openDir(result[0])}>
                 📁
             </Button>

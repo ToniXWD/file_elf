@@ -9,7 +9,8 @@ param (
 $PUBLISH_DIR = "./publish"
 $CARGO_TARGET_DIR = "./target/release"
 $TAURI_APP_DIR = "./app/search-files-app"
-$TAURI_TARGET_DIR = "$TAURI_APP_DIR/src-tauri/target/release"
+$TAURI_TARGET_RELEASE_DIR = "$TAURI_APP_DIR/src-tauri/target/release"
+$TAURI_TARGET_DEBUG_DIR = "$TAURI_APP_DIR/src-tauri/target/debug"
 $RUST_BINARY = "file_elf.exe"
 $TAURI_BINARY = "search-files-app.exe"
 $TAURI_INSTALL_MSI = "bundle/msi/search-files-app_*_x64_en-US.msi"
@@ -44,9 +45,9 @@ function Publish-Files {
     Write-Host "Copying files to the publish directory..."
     Copy-Item "base.toml" "$PUBLISH_DIR/"
     Copy-Item "$CARGO_TARGET_DIR/$RUST_BINARY" "$PUBLISH_DIR/"
-    Copy-Item "$TAURI_TARGET_DIR/$TAURI_BINARY" "$PUBLISH_DIR/"
-    Copy-Item "$TAURI_TARGET_DIR/$TAURI_INSTALL_MSI" "$PUBLISH_DIR/"
-    Copy-Item "$TAURI_TARGET_DIR/$TAURI_INSTALL_EXE" "$PUBLISH_DIR/"
+    Copy-Item "$TAURI_TARGET_RELEASE_DIR/$TAURI_BINARY" "$PUBLISH_DIR/"
+    Copy-Item "$TAURI_TARGET_RELEASE_DIR/$TAURI_INSTALL_MSI" "$PUBLISH_DIR/"
+    Copy-Item "$TAURI_TARGET_RELEASE_DIR/$TAURI_INSTALL_EXE" "$PUBLISH_DIR/"
 }
 
 # Package the build artifacts into a zip file
@@ -61,7 +62,8 @@ function Clean-Build {
     cargo clean
     Remove-Item -Recurse -Force $PUBLISH_DIR
     Remove-Item -Recurse -Force "$TAURI_APP_DIR/build/"
-    Remove-Item -Recurse -Force "$TAURI_TARGET_DIR/"
+    Remove-Item -Recurse -Force "$TAURI_TARGET_RELEASE_DIR/"
+    Remove-Item -Recurse -Force "$TAURI_TARGET_DEBUG_DIR/"
 }
 
 # Clean only the publish directory
@@ -74,7 +76,7 @@ function Clean-Publish {
 function Clean-Tauri {
     Write-Host "Cleaning Tauri build artifacts..."
     Remove-Item -Recurse -Force "$TAURI_APP_DIR/build/"
-    Remove-Item -Recurse -Force "$TAURI_TARGET_DIR/"
+    Remove-Item -Recurse -Force "$TAURI_TARGET_RELEASE_DIR/"
 }
 
 # Clean only the Rust project artifacts
