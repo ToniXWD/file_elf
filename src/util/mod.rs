@@ -4,8 +4,8 @@ use std::path::PathBuf;
 
 use crate::config::CONF;
 use errors::CustomError;
+use log::{error, trace};
 use regex::Regex;
-use std::ffi::OsString;
 use strsim::levenshtein;
 
 #[cfg(target_os = "windows")]
@@ -13,7 +13,6 @@ use std::os::windows::ffi::OsStringExt;
 #[cfg(target_os = "windows")]
 use winapi::um::fileapi::GetLogicalDriveStringsW;
 
-/// 匹配
 pub fn pattern_match(entry: &str, pattern: &str, is_fuzzy: bool) -> bool {
     let entry_l = entry.to_lowercase();
     let pattern_l = pattern.to_lowercase();
@@ -22,10 +21,18 @@ pub fn pattern_match(entry: &str, pattern: &str, is_fuzzy: bool) -> bool {
     let entry_prefix: String = entry_l.chars().take(pattern_l.chars().count()).collect();
     let pattern_prefix: String = pattern_l.chars().take(entry_l.chars().count()).collect();
 
-    if is_fuzzy {
-        // 设定一个模糊匹配的阈值，比如距离小于等于2
-        let threshold = 2;
-        levenshtein(&entry_prefix, &pattern_prefix) <= threshold
+    if is_fuzzy && pattern.len() > 3 && entry.len() > 3 {
+        // 模糊匹配只在字符串长度>3时才启用
+        // 设定一个模糊匹配的阈值，比如距离小于等于1
+        let threshold = 1;
+        let res = levenshtein(&entry_prefix, &pattern_prefix) <= threshold;
+        trace!(
+            "levenshtein: {} and {}: {}",
+            entry_prefix,
+            pattern_prefix,
+            res
+        );
+        res
     } else {
         entry_prefix == pattern_prefix
     }
@@ -37,10 +44,13 @@ pub fn regex_match(path: &PathBuf, pattern: &str) -> bool {
     let path_str = path.to_str().unwrap_or("");
 
     // 编译正则表达式
-    let re = Regex::new(pattern).unwrap();
-
-    // 使用正则表达式匹配路径
-    re.is_match(path_str)
+    if let Ok(re) = Regex::new(pattern) {
+        // 使用正则表达式匹配路径
+        re.is_match(path_str)
+    } else {
+        error!("Invalid regex pattern: {}", pattern);
+        false
+    }
 }
 
 /// 不存在或处于黑名单的文件
@@ -80,6 +90,8 @@ pub fn is_blacklisted(file_path: &PathBuf) -> bool {
 // 获取当前操作系统的所有盘符
 #[cfg(target_os = "windows")]
 pub fn get_drives() -> Vec<String> {
+    use std::ffi::OsString;
+
     let mut buffer: [u16; 256] = [0; 256];
     let length = unsafe { GetLogicalDriveStringsW(buffer.len() as u32, buffer.as_mut_ptr()) };
     if length == 0 {
@@ -128,6 +140,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(target_os = "windows")]
     fn test_drives() {
         let drives = get_drives();
         println!("{:?}", drives);

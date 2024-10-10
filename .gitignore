@@ -4,3 +4,4 @@ publish/*
 *.log
 *.bak
 release*.zip
+.vscode
